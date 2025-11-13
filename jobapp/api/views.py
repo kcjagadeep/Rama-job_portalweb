@@ -11,6 +11,8 @@ from rest_framework.decorators import api_view, permission_classes
 
 from rest_framework import status
 from rest_framework.response import Response
+from jobapp.utils.face_tracker import FaceTracker
+import json
 
 User = get_user_model()
 
@@ -77,6 +79,30 @@ def schedule_interview_api(request, job_id, applicant_id):
         Interview.objects.create(job=job, candidate=candidate, link=link, scheduled_at=dt)
         return Response({"message": "Interview scheduled successfully"}, status=status.HTTP_201_CREATED)
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+from rest_framework.decorators import throttle_classes
+from rest_framework.throttling import BaseThrottle
+
+class NoThrottle(BaseThrottle):
+    def allow_request(self, request, view):
+        return True
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([NoThrottle])
+def face_detect_api(request):
+    try:
+        frame_data = request.data.get('frame')
+        if not frame_data:
+            return Response({"error": "No frame data"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        tracker = FaceTracker()
+        result = tracker.process_frame(frame_data)
+        
+        return Response(result, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)    
                         
  

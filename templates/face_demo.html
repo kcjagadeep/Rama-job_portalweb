@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Tracking Demo</title>
+    {% load static %}
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .video-container {
+            position: relative;
+            display: inline-block;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        #demoVideo {
+            display: block;
+            background: #000;
+        }
+        
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            align-items: center;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:enabled {
+            background: #007bff;
+            color: white;
+        }
+        
+        button:enabled:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        
+        .info-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+            border-radius: 12px;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .face-box-demo {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 0 5px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .person1 { background: #4caf50; color: white; }
+        .person2 { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🎯 Face Tracking System Demo</h1>
+        <p>Test the face detection and tracking system that will be used in interviews.</p>
+        
+        <div class="controls">
+            <button id="startBtn" onclick="demo.start()">📹 Start Camera</button>
+            <button id="stopBtn" onclick="demo.stop()" disabled>⏹️ Stop</button>
+            <div id="status" class="status">Ready to start</div>
+        </div>
+        
+        <div class="video-container">
+            <video id="demoVideo" width="640" height="480" autoplay muted></video>
+            <canvas id="overlay" width="640" height="480"></canvas>
+        </div>
+        
+        <div id="results" class="results">
+            <h3>🔍 Detection Results</h3>
+            <div id="faceInfo">No faces detected yet</div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>📋 How Face Tracking Works</h3>
+            <ul>
+                <li><span class="face-box-demo person1">Person 1</span> Primary person (green box) - This is the main interviewee</li>
+                <li><span class="face-box-demo person2">Person 2+</span> Additional people (red boxes) - Triggers security alert</li>
+                <li>🚨 <strong>Alert System:</strong> Automatically detects when multiple people enter the frame</li>
+                <li>⚡ <strong>Real-time:</strong> Processes video frames every 500ms for optimal performance</li>
+                <li>🎯 <strong>Accuracy:</strong> Uses OpenCV Haar Cascades for reliable face detection</li>
+            </ul>
+            
+            <h4>🔧 Technical Details</h4>
+            <p>The system captures video frames, converts them to base64, sends to the Django backend for processing using OpenCV, and returns face coordinates for real-time overlay drawing.</p>
+        </div>
+    </div>
+    
+    {% csrf_token %}
+    <script src="{% static 'js/face-tracking-demo.js' %}"></script>
+</body>
+</html>

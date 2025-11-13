@@ -109,6 +109,10 @@ urlpatterns = [
     path('interview/<uuid:interview_uuid>/send-email/', views.send_interview_email_manual, name='send_interview_email_manual'),
     path('interview/<uuid:interview_uuid>/get-link/', views.get_interview_link, name='get_interview_link'),
     
+    # Face Tracking Demo
+    path('face-demo/', lambda request: render(request, 'face_demo.html'), name='face_demo'),
+    path('face-test/', lambda request: render(request, 'face_test.html'), name='face_test'),
+    
     
     
 ]

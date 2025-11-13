@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Detection Test</title>
+    {% load static %}
+</head>
+<body>
+    <h1>Face Detection Test</h1>
+    <video id="testVideo" width="640" height="480" autoplay muted></video>
+    <div id="results"></div>
+    
+    {% csrf_token %}
+    
+    <script>
+    let video = document.getElementById('testVideo');
+    let results = document.getElementById('results');
+    
+    // Get camera
+    navigator.mediaDevices.getUserMedia({video: true})
+        .then(stream => {
+            video.srcObject = stream;
+            console.log('✓ Camera started');
+            
+            // Start face detection after 2 seconds
+            setTimeout(testFaceDetection, 2000);
+        })
+        .catch(err => {
+            console.error('Camera error:', err);
+            results.innerHTML = 'Camera access denied';
+        });
+    
+    async function testFaceDetection() {
+        console.log('🎯 Testing face detection...');
+        
+        // Capture frame
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        const frameData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        try {
+            const response = await fetch('/api/face-detect/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ frame: frameData })
+            });
+            
+            const result = await response.json();
+            console.log('Face detection result:', result);
+            
+            results.innerHTML = `
+                <h3>Results:</h3>
+                <p>Faces detected: ${result.count}</p>
+                <p>Alert: ${result.alert ? 'YES' : 'NO'}</p>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+            
+            // Draw boxes on video
+            if (result.faces && result.faces.length > 0) {
+                drawFaces(result.faces);
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            results.innerHTML = 'Error: ' + error.message;
+        }
+        
+        // Test again in 2 seconds
+        setTimeout(testFaceDetection, 2000);
+    }
+    
+    function drawFaces(faces) {
+        // Create overlay if not exists
+        let overlay = document.getElementById('overlay');
+        if (!overlay) {
+            overlay = document.createElement('canvas');
+            overlay.id = 'overlay';
+            overlay.width = video.videoWidth;
+            overlay.height = video.videoHeight;
+            overlay.style.position = 'absolute';
+            overlay.style.top = video.offsetTop + 'px';
+            overlay.style.left = video.offsetLeft + 'px';
+            overlay.style.pointerEvents = 'none';
+            document.body.appendChild(overlay);
+        }
+        
+        const ctx = overlay.getContext('2d');
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        
+        faces.forEach((face, index) => {
+            const color = index === 0 ? '#00ff00' : '#ff0000';
+            const label = index === 0 ? 'Person 1' : `Person ${index + 1}`;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(face.x, face.y, face.width, face.height);
+            
+            ctx.fillStyle = color;
+            ctx.font = '16px Arial';
+            ctx.fillText(label, face.x, face.y - 10);
+        });
+    }
+    </script>
+</body>
+</html>

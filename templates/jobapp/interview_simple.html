@@ -170,6 +170,16 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
+        @keyframes blink-status {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .face-detection-status.active {
+            background: rgba(76, 175, 80, 0.9) !important;
+        }
+        .face-detection-status.active .status-dot {
+            background: #4caf50 !important;
+        }
         .controls {
             position: absolute;
             bottom: 15px;
@@ -380,6 +390,33 @@
                     <span>REC</span>
                 </div>
 
+                <!-- Face Detection Status Indicator -->
+                <div class="face-detection-status" id="faceStatus" style="
+                    position: absolute;
+                    bottom: 60px;
+                    left: 16px;
+                    background: rgba(244, 67, 54, 0.9);
+                    padding: 6px 12px;
+                    border-radius: 15px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    backdrop-filter: blur(10px);
+                    transition: all 0.3s ease;
+                ">
+                    <div class="status-dot" style="
+                        width: 8px;
+                        height: 8px;
+                        background: #ff4444;
+                        border-radius: 50%;
+                        animation: blink-status 2s ease-in-out infinite;
+                    "></div>
+                    <span>Face Detection: OFF</span>
+                </div>
+
                 <!-- Candidate name at bottom-left -->
                 <div class="participant-name">{{ candidate_name|default:"Candidate" }}</div>
 
@@ -392,6 +429,7 @@
                 <!-- Compact controls in bottom-right -->
                 <div class="controls">
                     <button class="btn mic" id="micBtn" onclick="toggleMic()" title="Toggle Microphone" style="display: none;">🎤</button>
+                    <button class="btn" onclick="startFaceDetection()" title="Start Face Detection" style="background: #2196f3; padding: 8px 12px; border-radius: 20px; font-size: 12px;">👁️ Face</button>
                     <button class="btn end-call" onclick="endInterview()" title="End Interview" style="padding: 12px 20px; width: auto; border-radius: 25px; font-size: 1rem; font-weight: 500;">End Interview</button>
                 </div>
             </div>
@@ -414,6 +452,21 @@
     
     <!-- Load typewriter script -->
     <script src="{% static 'js/typewriter-sync.js' %}"></script>
+    
+    <!-- Load face tracking script -->
+    <script src="{% static 'js/face-tracking.js' %}"></script>
+    
+    <script>
+    // Force face tracking initialization
+    window.initFaceTracking = function() {
+        const video = document.getElementById('userVideo');
+        if (video) {
+            console.log('🎯 Force initializing face tracking');
+            const tracker = new FaceTracker(video);
+            tracker.start();
+        }
+    };
+    </script>
 
     <script>
     // Template data passed from Django
@@ -1043,6 +1096,28 @@ function toggleMic() {
     log(`Camera ${isCameraOn ? 'enabled' : 'disabled'}`);
 } {% endcomment %}
 
+// Manual face detection start
+function startFaceDetection() {
+    console.log('🔄 Manual face detection start');
+    const video = document.getElementById('userVideo');
+    
+    if (!video) {
+        alert('Video not found');
+        return;
+    }
+    
+    if (video.videoWidth === 0) {
+        alert('Camera not ready yet');
+        return;
+    }
+    
+    // Force create new tracker
+    window.globalFaceTracker = new FaceTracker(video);
+    window.globalFaceTracker.start();
+    
+    console.log('✅ Face tracker manually started');
+}
+
 // End interview
 function endInterview() {
     if (confirm('Are you sure you want to end the interview?')) {
@@ -1266,6 +1341,43 @@ document.addEventListener('DOMContentLoaded', async function() {
     }, 2000);
     
     log('System initialization complete');
+    
+    // Force face tracking start after camera is ready
+    setTimeout(() => {
+        if (!window.globalFaceTracker) {
+            const video = document.getElementById('userVideo');
+            if (video) {
+                console.log('🎯 Force starting face tracking');
+                window.globalFaceTracker = new FaceTracker(video);
+                window.globalFaceTracker.start();
+            }
+        }
+    }, 5000);
+    
+    // Initialize face tracking directly
+    setTimeout(() => {
+        const video = document.getElementById('userVideo');
+        if (video) {
+            console.log('🎯 Starting face tracking on userVideo');
+            window.globalFaceTracker = new FaceTracker(video);
+            window.globalFaceTracker.start();
+        }
+    }, 2000);
+    
+    // Keep trying to start face tracking
+    const startFaceTracking = () => {
+        if (!window.globalFaceTracker) {
+            const video = document.getElementById('userVideo');
+            if (video && video.videoWidth > 0) {
+                console.log('🎯 Face tracking auto-start');
+                window.globalFaceTracker = new FaceTracker(video);
+                window.globalFaceTracker.start();
+            } else {
+                setTimeout(startFaceTracking, 1000);
+            }
+        }
+    };
+    startFaceTracking();
 });
     </script>
 </body>

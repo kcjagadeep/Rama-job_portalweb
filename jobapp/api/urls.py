@@ -1,7 +1,7 @@
 # API URL routes
 
 from django.urls import path
-from .views import RegisterView , JobListCreate , jobdetail , ApplicationCreate , ApplicationList ,InterviewList , schedule_interview_api
+from .views import RegisterView , JobListCreate , jobdetail , ApplicationCreate , ApplicationList ,InterviewList , schedule_interview_api, face_detect_api
 from rest_framework_simplejwt.views import TokenRefreshView , TokenObtainPairView
 
 
@@ -22,5 +22,8 @@ urlpatterns = [
     # 📅 Interview
     path('interviews/', InterviewList.as_view(), name='interview_list'),
     path('schedule-interview/<int:job_id>/<int:applicant_id>/', schedule_interview_api, name='schedule_interview_api'),
+    
+    # 👤 Face Detection
+    path('face-detect/', face_detect_api, name='face_detect_api'),
     
 ]
