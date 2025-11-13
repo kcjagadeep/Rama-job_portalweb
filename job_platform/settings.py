@@ -160,8 +160,16 @@ PRODUCTION_DOMAIN = config('PRODUCTION_DOMAIN', default='localhost:8000')
 if PRODUCTION_DOMAIN not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.extend([PRODUCTION_DOMAIN, '.onrender.com'])
 
-        # Database configuration - PostgreSQL
-if config('DATABASE_URL', default=None) and dj_database_url:
+        # Database configuration
+if config('USE_SQLITE', default=False, cast=bool):
+    # Use SQLite for development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+elif config('DATABASE_URL', default=None) and dj_database_url:
      # Use DATABASE_URL (production)
     DATABASES = {
         'default': dj_database_url.config(
