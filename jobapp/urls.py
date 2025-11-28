@@ -1,8 +1,10 @@
 # jobapp/urls.py
 
-from django.urls import path
+from django.urls import path, include
 from django.shortcuts import render
 from . import views
+from . import tts_views
+from . import webrtc_views
 
 
 
@@ -92,6 +94,7 @@ urlpatterns = [
     
     # Interview results view
     path('interview-results/<uuid:interview_uuid>/', views.interview_results, name='interview_results'),
+    path('interview-results/<uuid:interview_uuid>/download-pdf/', views.download_interview_pdf, name='download_interview_pdf'),
     
   
     
@@ -113,6 +116,20 @@ urlpatterns = [
     path('face-demo/', lambda request: render(request, 'face_demo.html'), name='face_demo'),
     path('face-test/', lambda request: render(request, 'face_test.html'), name='face_test'),
     
+    # TTS Testing Lab
+    path('tts-test/', tts_views.tts_test_view, name='tts_test'),
+    path('tts/', include('jobapp.tts_urls')),
     
+    # SIP Trunk Test - include with prefix
+    path('sip/', include('jobapp.sip_urls')),
+    
+    # WebRTC SIP - include with prefix
+    path('webrtc/', include('jobapp.webrtc_urls')),
+    
+    # WebRTC Interview URLs
+    path('interview/webrtc/<uuid:interview_uuid>/', webrtc_views.webrtc_interview_room, name='webrtc_interview_room'),
+    path('interview/join/', webrtc_views.join_with_passcode, name='join_with_passcode'),
+    path('api/webrtc/signaling/', webrtc_views.webrtc_signaling, name='webrtc_signaling'),
+    path('api/webrtc/room/<str:room_id>/', webrtc_views.get_room_info, name='get_room_info'),
     
 ]

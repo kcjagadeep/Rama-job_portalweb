@@ -1,0 +1,525 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malayalam Voice Agent - IndicF5</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans Malayalam', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #2E8B57 0%, #228B22 50%, #006400 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            direction: ltr;
+        }
+        
+        .agent-container {
+            text-align: center;
+            max-width: 700px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .agent-title {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #fff, #f0f8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .malayalam-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #f0f8ff;
+            font-weight: 600;
+        }
+        
+        .agent-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .feature-desc {
+            font-size: 0.95rem;
+            opacity: 0.85;
+            line-height: 1.5;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border-left: 4px solid #90EE90;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            color: #f0f8ff;
+        }
+        
+        .instructions ol {
+            text-align: left;
+            padding-left: 25px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(76, 175, 80, 0.2);
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            margin-top: 25px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .error-status {
+            background: rgba(244, 67, 54, 0.2);
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+        
+        .error-dot {
+            background: #f44336;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .back-link {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            color: white;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .tech-specs {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .tech-specs h4 {
+            margin-bottom: 10px;
+            color: #90EE90;
+        }
+        
+        .voice-button-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+        
+        .voice-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .voice-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(76, 175, 80, 0.4);
+        }
+        
+        .voice-button.active {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            animation: pulse-red 1.5s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @media (max-width: 768px) {
+            .agent-container {
+                margin: 20px;
+                padding: 25px 20px;
+            }
+            
+            .agent-title {
+                font-size: 2.2rem;
+            }
+            
+            .malayalam-title {
+                font-size: 1.6rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .back-link {
+                top: 20px;
+                left: 20px;
+                padding: 10px 18px;
+                font-size: 0.9rem;
+            }
+            
+            .voice-button {
+                width: 70px;
+                height: 70px;
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <a href="/" class="back-link">← Back to Home</a>
+    
+    <div class="agent-container">
+        <h1 class="agent-title">🎤 Malayalam Voice Agent</h1>
+        <h2 class="malayalam-title">മലയാളം വോയ്സ് ഏജന്റ്</h2>
+        <p class="agent-subtitle">
+            Experience natural conversations in Malayalam using IndicF5 TTS and NVIDIA Llama-3.3-Nemotron. 
+            Speak in Malayalam or English - the AI will respond appropriately!
+        </p>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🇮🇳</div>
+                <div class="feature-title">IndicF5 TTS</div>
+                <div class="feature-desc">High-quality Malayalam text-to-speech using advanced Indian language models</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <div class="feature-title">NVIDIA Llama-3.3-Nemotron</div>
+                <div class="feature-desc">Powered by NVIDIA's latest 70B parameter model for intelligent responses</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🗣️</div>
+                <div class="feature-title">Bilingual Support</div>
+                <div class="feature-desc">Seamlessly switch between Malayalam and English in the same conversation</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title">Real-time Processing</div>
+                <div class="feature-desc">Fast speech recognition and AI responses with minimal latency</div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Use / എങ്ങനെ ഉപയോഗിക്കാം:</h3>
+            <ol>
+                <li>Click the green voice button (bottom-right corner) / പച്ച വോയ്സ് ബട്ടൺ ക്ലിക്ക് ചെയ്യുക</li>
+                <li>Allow microphone access when prompted / മൈക്രോഫോൺ ആക്സസ് അനുവദിക്കുക</li>
+                <li>Speak in Malayalam or English / മലയാളത്തിലോ ഇംഗ്ലീഷിലോ സംസാരിക്കുക</li>
+                <li>Wait for the AI to respond / AI യുടെ മറുപടിക്കായി കാത്തിരിക്കുക</li>
+                <li>Click the button again to end / അവസാനിപ്പിക്കാൻ വീണ്ടും ബട്ടൺ ക്ലിക്ക് ചെയ്യുക</li>
+            </ol>
+        </div>
+        
+        <div class="status-indicator {% if not tts_status %}error-status{% endif %}">
+            <div class="status-dot {% if not tts_status %}error-dot{% endif %}"></div>
+            <span>
+                {% if tts_status %}
+                    Malayalam Voice Agent Ready / മലയാളം വോയ്സ് ഏജന്റ് തയ്യാർ
+                {% else %}
+                    TTS Service Issue: {{ tts_message }}
+                {% endif %}
+            </span>
+        </div>
+        
+        <div class="tech-specs">
+            <h4>Technical Specifications:</h4>
+            <p><strong>TTS Service:</strong> IndicF5 API ({{ api_endpoint }})</p>
+            <p><strong>LLM Model:</strong> {{ model }}</p>
+            <p><strong>Language Support:</strong> Malayalam (മലയാളം) + English</p>
+            <p><strong>Voice Quality:</strong> High-fidelity Indian language synthesis</p>
+        </div>
+    </div>
+    
+    <!-- Voice Button -->
+    <div class="voice-button-container">
+        <button class="voice-button" id="malayalamVoiceBtn" title="Start Malayalam Voice Chat">
+            🎤
+        </button>
+    </div>
+    
+    <!-- Malayalam Voice Agent Script -->
+    <script>
+        class MalayalamVoiceAgent {
+            constructor() {
+                this.isActive = false;
+                this.sessionId = null;
+                this.recognition = null;
+                this.currentAudio = null;
+                this.button = document.getElementById('malayalamVoiceBtn');
+                
+                this.init();
+            }
+            
+            init() {
+                // Check for speech recognition support
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    this.recognition = new SpeechRecognition();
+                    this.recognition.continuous = false;
+                    this.recognition.interimResults = false;
+                    this.recognition.lang = 'ml-IN'; // Malayalam
+                    
+                    this.recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        console.log('Malayalam Speech recognized:', transcript);
+                        this.sendMessage(transcript);
+                    };
+                    
+                    this.recognition.onerror = (event) => {
+                        console.error('Malayalam Speech recognition error:', event.error);
+                        this.showError('Speech recognition error: ' + event.error);
+                    };
+                    
+                    this.recognition.onend = () => {
+                        if (this.isActive) {
+                            // Restart recognition for continuous listening
+                            setTimeout(() => {
+                                if (this.isActive) {
+                                    this.recognition.start();
+                                }
+                            }, 1000);
+                        }
+                    };
+                } else {
+                    console.error('Speech recognition not supported');
+                    this.showError('Speech recognition not supported in this browser');
+                }
+                
+                // Button click handler
+                this.button.addEventListener('click', () => {
+                    if (this.isActive) {
+                        this.stopSession();
+                    } else {
+                        this.startSession();
+                    }
+                });
+            }
+            
+            async startSession() {
+                try {
+                    const response = await fetch('/malayalam-voice/start/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({})
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.sessionId = data.session_id;
+                        this.isActive = true;
+                        this.button.classList.add('active');
+                        this.button.innerHTML = '🛑';
+                        this.button.title = 'Stop Malayalam Voice Chat';
+                        
+                        // Play welcome message
+                        if (data.audio_url) {
+                            await this.playAudio(data.audio_url);
+                        }
+                        
+                        // Start speech recognition
+                        if (this.recognition) {
+                            this.recognition.start();
+                        }
+                        
+                        console.log('Malayalam Voice Agent started:', data);
+                    } else {
+                        this.showError('Failed to start Malayalam voice session: ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('Error starting Malayalam voice session:', error);
+                    this.showError('Connection error');
+                }
+            }
+            
+            async stopSession() {
+                try {
+                    if (this.recognition) {
+                        this.recognition.stop();
+                    }
+                    
+                    if (this.currentAudio) {
+                        this.currentAudio.pause();
+                    }
+                    
+                    if (this.sessionId) {
+                        await fetch('/malayalam-voice/stop/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({session_id: this.sessionId})
+                        });
+                    }
+                    
+                    this.isActive = false;
+                    this.sessionId = null;
+                    this.button.classList.remove('active');
+                    this.button.innerHTML = '🎤';
+                    this.button.title = 'Start Malayalam Voice Chat';
+                    
+                    console.log('Malayalam Voice Agent stopped');
+                } catch (error) {
+                    console.error('Error stopping Malayalam voice session:', error);
+                }
+            }
+            
+            async sendMessage(text) {
+                try {
+                    const response = await fetch('/malayalam-voice/chat/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            session_id: this.sessionId,
+                            text: text
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.audio_url) {
+                        console.log('Malayalam AI Response:', data.text);
+                        await this.playAudio(data.audio_url);
+                    } else {
+                        this.showError('AI response error: ' + (data.error || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error sending Malayalam message:', error);
+                    this.showError('Connection error');
+                }
+            }
+            
+            async playAudio(audioUrl) {
+                return new Promise((resolve, reject) => {
+                    if (this.currentAudio) {
+                        this.currentAudio.pause();
+                    }
+                    
+                    this.currentAudio = new Audio(audioUrl);
+                    this.currentAudio.onended = resolve;
+                    this.currentAudio.onerror = reject;
+                    this.currentAudio.play().catch(reject);
+                });
+            }
+            
+            showError(message) {
+                console.error('Malayalam Voice Agent Error:', message);
+                // You could show a toast notification here
+                alert('Error: ' + message);
+            }
+        }
+        
+        // Initialize Malayalam Voice Agent when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ Malayalam Voice Agent Ready - Using IndicF5 TTS + NVIDIA Llama-3.3-Nemotron');
+            window.malayalamVoiceAgent = new MalayalamVoiceAgent();
+        });
+    </script>
+</body>
+</html>

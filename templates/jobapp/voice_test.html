@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Agent Test</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Voice Agent System Test</h1>
+        <p>Test the real-time voice agent functionality:</p>
+        
+        <button class="test-button" onclick="testVoiceEndpoints()">Test API Endpoints</button>
+        <button class="test-button" onclick="testTTS()">Test Text-to-Speech</button>
+        <button class="test-button" onclick="startVoiceDemo()">Start Voice Demo</button>
+        
+        <div id="results"></div>
+        
+        <h2>Instructions:</h2>
+        <ol>
+            <li>Click "Test API Endpoints" to verify the backend is working</li>
+            <li>Click "Test Text-to-Speech" to check audio generation</li>
+            <li>Click "Start Voice Demo" to test the full voice agent</li>
+            <li>Look for the floating voice button in the bottom-right corner</li>
+        </ol>
+        
+        <h2>Requirements:</h2>
+        <ul>
+            <li>Chrome or Edge browser (for best speech recognition)</li>
+            <li>Microphone access permission</li>
+            <li>Audio output (speakers/headphones)</li>
+        </ul>
+    </div>
+    
+    <!-- Include the voice agent -->
+    <script src="{% static 'js/voice-metrics.js' %}"></script>
+    <script src="{% static 'js/voice-agent.js' %}"></script>
+    
+    <script>
+        function addResult(message, type = 'result') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        async function testVoiceEndpoints() {
+            addResult('Testing voice agent endpoints...', 'result');
+            
+            try {
+                // Test status endpoint
+                const statusResponse = await fetch('/voice/status/');
+                const statusData = await statusResponse.json();
+                
+                if (statusData.success) {
+                    addResult('✅ Status endpoint working', 'success');
+                } else {
+                    addResult('❌ Status endpoint failed', 'error');
+                }
+                
+                // Test start endpoint
+                const startResponse = await fetch('/voice/start/', {\n                    method: 'POST',\n                    headers: {\n                        'Content-Type': 'application/json',\n                        'X-CSRFToken': getCSRFToken()\n                    },\n                    body: JSON.stringify({\n                        session_id: 'test_session_' + Date.now()\n                    })\n                });\n                \n                const startData = await startResponse.json();\n                \n                if (startData.success) {\n                    addResult('✅ Start endpoint working', 'success');\n                    \n                    // Test stop endpoint\n                    const stopResponse = await fetch('/voice/stop/', {\n                        method: 'POST',\n                        headers: {\n                            'Content-Type': 'application/json',\n                            'X-CSRFToken': getCSRFToken()\n                        },\n                        body: JSON.stringify({\n                            session_id: startData.session_id\n                        })\n                    });\n                    \n                    const stopData = await stopResponse.json();\n                    if (stopData.success) {\n                        addResult('✅ Stop endpoint working', 'success');\n                    } else {\n                        addResult('❌ Stop endpoint failed', 'error');\n                    }\n                } else {\n                    addResult('❌ Start endpoint failed: ' + startData.error, 'error');\n                }\n                \n            } catch (error) {\n                addResult('❌ Endpoint test failed: ' + error.message, 'error');\n            }\n        }\n        \n        async function testTTS() {\n            addResult('Testing text-to-speech...', 'result');\n            \n            try {\n                const response = await fetch('/generate-audio/', {\n                    method: 'POST',\n                    headers: {\n                        'Content-Type': 'application/json',\n                        'X-CSRFToken': getCSRFToken()\n                    },\n                    body: JSON.stringify({\n                        text: 'Hello! This is a test of the text-to-speech system.'\n                    })\n                });\n                \n                const data = await response.json();\n                \n                if (data.success && data.audio_url) {\n                    addResult('✅ TTS working - playing test audio', 'success');\n                    \n                    // Play the audio\n                    const audio = new Audio(data.audio_url);\n                    audio.play().catch(e => {\n                        addResult('⚠️ TTS generated but audio play failed: ' + e.message, 'error');\n                    });\n                } else {\n                    addResult('❌ TTS failed: ' + (data.error || 'Unknown error'), 'error');\n                }\n                \n            } catch (error) {\n                addResult('❌ TTS test failed: ' + error.message, 'error');\n            }\n        }\n        \n        function startVoiceDemo() {\n            addResult('Starting voice demo...', 'result');\n            \n            if (window.voiceAgent) {\n                if (!window.voiceAgent.isActive) {\n                    window.voiceAgent.startSession();\n                    addResult('✅ Voice demo started - look for the floating button!', 'success');\n                } else {\n                    addResult('ℹ️ Voice demo already active', 'result');\n                }\n            } else {\n                addResult('❌ Voice agent not initialized', 'error');\n            }\n        }\n        \n        function getCSRFToken() {\n            const cookies = document.cookie.split(';');\n            for (let cookie of cookies) {\n                const [name, value] = cookie.trim().split('=');\n                if (name === 'csrftoken') {\n                    return value;\n                }\n            }\n            \n            const csrfMeta = document.querySelector('meta[name=\"csrf-token\"]');\n            if (csrfMeta) {\n                return csrfMeta.getAttribute('content');\n            }\n            \n            return '';\n        }\n        \n        // Initialize on page load\n        document.addEventListener('DOMContentLoaded', function() {\n            addResult('Voice agent test page loaded', 'success');\n            \n            // Check if voice agent is available\n            setTimeout(() => {\n                if (window.voiceAgent) {\n                    addResult('✅ Voice agent initialized and ready', 'success');\n                } else {\n                    addResult('⚠️ Voice agent not found - check console for errors', 'error');\n                }\n            }, 1000);\n        });\n    </script>\n</body>\n</html>

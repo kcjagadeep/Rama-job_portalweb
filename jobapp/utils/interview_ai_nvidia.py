@@ -5,17 +5,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def ask_ai_question(prompt, candidate_name=None, job_title=None, company_name=None,  timeout=None):
-    """Ask AI question with proper timeout and error handling"""
+def ask_ai_question(prompt, candidate_name=None, job_title=None, company_name=None, timeout=None):
+    """Ask AI question using NVIDIA Llama-3.3-Nemotron-Super-49B-v1 model"""
     try:
         api_key = config('NVIDIA_API_KEY')
     except:
         logger.error("NVIDIA_API_KEY not found in environment variables")
-        return get_fallback_response(prompt, candidate_name, job_title, company_name)
+        raise ValueError("NVIDIA_API_KEY is required for LLM functionality")
         
     if not api_key:
         logger.error("NVIDIA_API_KEY is empty")
-        return get_fallback_response(prompt, candidate_name, job_title, company_name)
+        raise ValueError("NVIDIA_API_KEY cannot be empty")
         
     candidate_name = candidate_name or "the candidate"
     job_title = job_title or "Software Developer" 
@@ -23,60 +23,63 @@ def ask_ai_question(prompt, candidate_name=None, job_title=None, company_name=No
         
     if not prompt or not prompt.strip():
         logger.error("Empty prompt provided to AI function")
-        return f"Hi {candidate_name}! I'm Sarah. Tell me about yourself."
+        return f"Hey {candidate_name}! Great to meet you. What brings you here today?"
             
-    # Simple, direct interviewer prompt
+    # Optimized system prompt for NVIDIA Llama-3.3-Nemotron
     system_prompt = f"""
-You are Sarah, an HR interviewer at {company_name}. You are interviewing {candidate_name} for the {job_title} position.
+You're having a casual, friendly conversation with {candidate_name}. You're genuinely curious about them as a person.
 
-RULES:
-1. Speak directly as Sarah - no labels, no "Response as Sarah", no stage directions
+CORE INSTRUCTIONS:
+1. Talk naturally - no formal introductions or titles
 2. Keep responses SHORT (1-2 sentences maximum)
-3. ALWAYS acknowledge what the candidate just said first
-4. Ask ONE simple, clear question at a time
-5. Be friendly and encouraging
-6. Focus on job-relevant topics
+3. Show genuine interest in what they share
+4. Ask follow-up questions that feel organic
+5. Be warm, encouraging, and relatable
 
 CONVERSATION STYLE:
-- Listen carefully to their answers
-- Build on what they tell you
-- Ask simple, direct questions
-- Be supportive when they struggle
-- Keep questions short and clear
+- React authentically to what they say
+- Ask about their passions and experiences
+- Keep it light and engaging
+- Show you're really listening
 
-EXAMPLES:
-- Good: "That's great! What programming languages do you know?"
-- Bad: "Response as Sarah: That's wonderful to hear about your background..."
-- Good: "Nice! Tell me about a project you built."
-- Bad: "I appreciate you sharing that detailed information about your experience..."
+GOOD EXAMPLES:
+"Oh wow, that sounds really cool! What got you into that?"
+"Nice! I bet that was quite an experience. What was the best part?"
+"That's awesome! How long have you been working on that?"
 
-Remember: Short responses, acknowledge their answer, ask one clear question.
+AVOID:
+- Formal interview language
+- Robotic responses
+- Multiple questions at once
+- Any labels or prefixes
+
+Just be yourself and have a genuine conversation.
 """
                 
     try:
-        # Initialize client with timeout
-        client = OpenAI(               
+        # Initialize NVIDIA client
+        client = OpenAI(
             base_url="https://integrate.api.nvidia.com/v1",
             api_key=api_key,
-            timeout= timeout or 2.0 # reduced to 2.0 seconds
+            timeout=timeout or 10.0
         )
         
-        logger.info(f"Making AI API call with timeout=20s")
+        logger.info(f"Making NVIDIA Llama-3.3-Nemotron API call")
         
         completion = client.chat.completions.create(
             model="nvidia/llama-3.3-nemotron-super-49b-v1",
             messages=[
                 {
                     "role": "system",
-                    "content": system_prompt # This is interviewer personality
+                    "content": system_prompt
                 },
-                {   
+                {
                     "role": "user",
-                    "content": prompt # This is candidate response + context
+                    "content": prompt
                 }
             ],
-            temperature=0.5,
-            max_tokens=50,
+            temperature=0.8,
+            max_tokens=80,
             stream=False,
             stop=["\n\n", "Candidate:", "You:", "Interviewer:", "Response as", "Here's my", "As Sarah", "Sarah responds", "*", "(", "Warm"]
         )
@@ -84,12 +87,12 @@ Remember: Short responses, acknowledge their answer, ask one clear question.
         raw_response = completion.choices[0].message.content
         cleaned_response = clean_text(raw_response)
         
-        logger.info(f"AI API call successful, response length: {len(cleaned_response)}")
+        logger.info(f"NVIDIA Llama-3.3-Nemotron response successful, length: {len(cleaned_response)}")
         return cleaned_response
         
     except Exception as e:
-        logger.error(f"AI API Error: {type(e).__name__}: {str(e)}")
-        return get_fallback_response(prompt, candidate_name, job_title, company_name)
+        logger.error(f"NVIDIA API Error: {type(e).__name__}: {str(e)}")
+        raise RuntimeError(f"Failed to get response from NVIDIA Llama-3.3-Nemotron model: {str(e)}")
 
 def clean_text(text):
     """Clean AI response and keep it short and direct"""
@@ -121,28 +124,3 @@ def clean_text(text):
         
     return text
 
-def get_fallback_response(prompt, candidate_name, job_title, company_name):
-    """Generate short, direct fallback responses"""
-    candidate_name = candidate_name or "the candidate"
-    job_title = job_title or "Software Developer"
-    company_name = company_name or "Our Company"
-    
-    prompt_lower = prompt.lower()
-    
-    # Short, direct fallback responses
-    if any(phrase in prompt_lower for phrase in ['tell me about yourself', 'introduce', 'start']):
-        return f"Hi {candidate_name}! Tell me about your background."
-    elif any(phrase in prompt_lower for phrase in ['technical', 'experience', 'skills', 'technology']):
-        return "That's great! What programming languages do you know?"
-    elif any(phrase in prompt_lower for phrase in ['project', 'challenging', 'problem', 'built', 'developed']):
-        return "Nice! Tell me about a project you built."
-    elif any(phrase in prompt_lower for phrase in ['team', 'collaboration', 'work with others', 'colleagues']):
-        return "Good! How do you work with teams?"
-    elif any(phrase in prompt_lower for phrase in ['goals', 'future', 'career', 'growth']):
-        return "Interesting! What are your career goals?"
-    elif any(phrase in prompt_lower for phrase in ['questions', 'ask', 'company', 'role']):
-        return "Sure! What questions do you have?"
-    elif any(phrase in prompt_lower for phrase in ['thank', 'final', 'wrap', 'end']):
-        return f"Thank you {candidate_name}! We'll be in touch soon."
-    else:
-        return "That's helpful! What interests you about this role?"

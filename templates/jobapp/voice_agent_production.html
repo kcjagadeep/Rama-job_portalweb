@@ -1,0 +1,923 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Voice Agent - Production Test</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh; color: white; overflow-x: hidden;
+        }
+        
+        .container { width: 95%; height: 95vh; margin: 0 auto; padding: 1%; box-sizing: border-box; }
+        
+        .interface-header { text-align: center; margin-bottom: 1%; }
+        .interface-header h1 { font-size: 1.2rem; margin-bottom: 0.5%; color: #ffd700; }
+        .interface-header p { opacity: 0.9; font-size: 0.75rem; margin-bottom: 1%; }
+        
+        .api-key-display {
+            background: rgba(0,0,0,0.4);
+            padding: 1%;
+            border-radius: 10px;
+            margin-top: 1%;
+            font-size: 0.65rem;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(255,215,0,0.3);
+        }
+        
+        #apiKeyValue {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        
+        .main-grid { display: grid; grid-template-columns: 1fr 25%; gap: 1%; height: 100%; }
+        
+        .voice-interface {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1%;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        
+
+        
+        .agent-avatar.active { animation: pulse 2s infinite; }
+        
+        .call-section {
+            margin-top: auto;
+            margin-bottom: 2%;
+            width: 100%;
+        }
+        
+        .mic-status { 
+            font-size: 0.8rem;
+            color: #ffd700;
+        }
+        
+        .call-button {
+            width: 100%; height: 50px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+        }
+        
+        .call-button:hover { transform: translateY(-3px); }
+        .call-button.active { 
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status-text { font-size: 1rem; margin: 1% 0; }
+        .mic-status { 
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.3);
+            display: inline-block;
+            margin: 10px 0;
+        }
+        
+        .controls-panel {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1%;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            height: 100%;
+            box-sizing: border-box;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section { margin-bottom: 2%; }
+        .section h3 { 
+            font-size: 0.85rem; 
+            margin-bottom: 5px; 
+            color: #ffd700;
+            border-bottom: 1px solid rgba(255,215,0,0.3);
+            padding-bottom: 2px;
+        }
+        
+        .model-display {
+            background: rgba(0,0,0,0.3);
+            padding: 6px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+        }
+        
+        .dropdown {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.3);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 6px;
+        }
+        
+        .dropdown option {
+            background: #2a2a2a;
+            color: white;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .metric {
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        
+        .metric-label {
+            font-size: 0.7rem;
+            opacity: 0.8;
+            margin-top: 1px;
+        }
+        
+        .conversation {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 2%;
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 1%;
+            font-size: 0.8rem;
+            line-height: 1.3;
+        }
+        
+        .instructions {
+            text-align: center;
+            padding: 20px;
+            color: #ffd700;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .instructions p {
+            margin-bottom: 8px;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        .message {
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            word-wrap: break-word;
+        }
+        
+        .user-msg {
+            background: rgba(0,123,255,0.3);
+            margin-left: 20%;
+        }
+        
+        .agent-msg {
+            background: rgba(40,167,69,0.3);
+            margin-right: 20%;
+        }
+        
+        .error-msg {
+            background: rgba(255,99,99,0.3);
+            border: 1px solid rgba(255,99,99,0.5);
+            margin-right: 20%;
+            color: #ffcccc;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .container { padding: 15px; }
+            .voice-interface { padding: 25px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-grid">
+            <div class="voice-interface">
+                <div class="interface-header">
+                    <h1>🎤 Real-time Voice Agent</h1>
+                    <p>Production-ready TTS testing with NVIDIA LLM</p>
+                    <div class="api-key-display" id="apiKeyDisplay">
+                        🔑 API Key: <span id="apiKeyValue">Generating...</span>
+                    </div>
+                </div>
+                <div class="status-text" id="statusText">Ready to Talk</div>
+                
+                <div>Duration: <span id="duration">00:00</span> | <span class="mic-status" id="micStatus">Ready to Talk</span></div>
+                
+                <div class="conversation" id="conversation">
+                    <div class="instructions" id="instructions">
+                        <h3>🎤 Voice Agent Instructions</h3>
+                        <p>1. Select your preferred TTS model and voice</p>
+                        <p>2. Click the call button below to start</p>
+                        <p>3. Speak naturally - AI will respond with voice</p>
+                        <p>4. Real-time metrics show performance</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls-panel">
+                <div class="section">
+                    <h3 id="llmModelTitle">🧠 Connected LLM Model</h3>
+                    <div class="model-display">
+                        LLM: nvidia/llama-3.3-nemotron-super-49b-v1
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>🤖 TTS Model</h3>
+                    <select id="modelSelect" class="dropdown" onchange="agent.selectModel(this.value)">
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+                
+                <div class="section">
+                    <h3>🔊 Voice Selection</h3>
+                    <select id="voiceSelect" class="dropdown" onchange="agent.selectVoice(this.value)">
+                        <option value="">Loading voices...</option>
+                    </select>
+                </div>
+                
+                <div class="section">
+                    <h3>📊 Real-time Metrics</h3>
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-value" id="llmLatency">0ms</div>
+                            <div class="metric-label">LLM Response</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="ttsLatency">0ms</div>
+                            <div class="metric-label">TTS Generation</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="totalLatency">0ms</div>
+                            <div class="metric-label">Total Turn</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="avgLatency">0ms</div>
+                            <div class="metric-label">Average</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>🎯 Session Stats</h3>
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-value" id="turnCount">0</div>
+                            <div class="metric-label">Turns</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="successRate">100%</div>
+                            <div class="metric-label">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="call-section">
+                    <button class="call-button" id="callBtn" onclick="toggleCall()">
+                        📞
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <audio id="audioPlayer" preload="auto"></audio>
+    
+    <script>
+        class ProductionVoiceAgent {
+            constructor() {
+                this.isActive = false;
+                this.recognition = null;
+                this.currentModel = null;
+                this.currentVoice = null;
+                this.models = [];
+                this.voices = [];
+                this.allVoices = [];
+                this.apiToken = null;
+                this.sessionStats = { turns: 0, successful: 0, totalLatency: 0 };
+                this.startTime = null;
+                this.durationTimer = null;
+                this.llmConnected = false;
+                this.init();
+            }
+            
+            async init() {
+                try {
+                    document.getElementById('modelSelect').innerHTML = '<option>Connecting to API...</option>';
+                    document.getElementById('voiceSelect').innerHTML = '<option>Connecting to API...</option>';
+                    
+                    await this.generateToken();
+                    await this.loadModels();
+                    await this.loadVoices();
+                    this.setupSpeechRecognition();
+                    this.setupAudio();
+                } catch (error) {
+                    console.error('❌ API Connection Failed:', error);
+                    document.getElementById('modelSelect').innerHTML = '<option>API Connection Failed</option>';
+                    document.getElementById('voiceSelect').innerHTML = '<option>API Connection Failed</option>';
+                    alert('Failed to connect to TTS API server. Please check if http://34.232.76.115 is accessible.');
+                }
+            }
+            
+            async generateToken() {
+                const startTime = performance.now();
+                document.getElementById('apiKeyValue').textContent = 'Generating...';
+                
+                try {
+                    const response = await fetch('/tts/generate-token/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCSRFToken()
+                        }
+                    });
+                    
+                    const connectionTime = Math.round(performance.now() - startTime);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.apiToken = data.token;
+                        document.getElementById('apiKeyValue').textContent = `${this.apiToken} (${connectionTime}ms)`;
+                        console.log('✅ Real API Token:', this.apiToken);
+                    } else {
+                        throw new Error('Token generation failed');
+                    }
+                } catch (error) {
+                    const connectionTime = Math.round(performance.now() - startTime);
+                    console.error('❌ Token error:', error);
+                    this.apiToken = 'ERROR_NO_TOKEN';
+                    document.getElementById('apiKeyValue').textContent = `Failed to generate (${connectionTime}ms)`;
+                    document.getElementById('apiKeyValue').style.color = '#ff6b6b';
+                }
+            }
+            
+            async loadModels() {
+                const startTime = performance.now();
+                try {
+                    const response = await fetch('/tts/models/', {
+                        headers: {
+                            'xi-api-key': this.apiToken
+                        }
+                    });
+                    
+                    const connectionTime = Math.round(performance.now() - startTime);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.models = data.models || [];
+                        this.renderModels(connectionTime);
+                        console.log('✅ Real models loaded with API key:', this.models);
+                    } else {
+                        throw new Error(`Models API failed: ${response.status}`);
+                    }
+                } catch (error) {
+                    const connectionTime = Math.round(performance.now() - startTime);
+                    document.querySelector('.section h3').innerHTML = `🤖 TTS Model (${connectionTime}ms - Error)`;
+                    console.error('❌ Models loading failed:', error);
+                    throw error;
+                }
+            }
+            
+            async loadVoices() {
+                const startTime = performance.now();
+                try {
+                    const response = await fetch('/tts/voices/', {
+                        headers: {
+                            'xi-api-key': this.apiToken
+                        }
+                    });
+                    
+                    const connectionTime = Math.round(performance.now() - startTime);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.allVoices = data.voices || [];
+                        this.voices = this.allVoices;
+                        this.renderVoices(connectionTime);
+                        console.log('✅ Real voices loaded with API key:', this.voices);
+                    } else {
+                        throw new Error(`Voices API failed: ${response.status}`);
+                    }
+                } catch (error) {
+                    const connectionTime = Math.round(performance.now() - startTime);
+                    document.querySelectorAll('.section h3')[2].innerHTML = `🔊 Voice Selection (${connectionTime}ms - Error)`;
+                    console.error('❌ Voices loading failed:', error);
+                    throw error;
+                }
+            }
+            
+            async loadVoicesForModel(modelId) {
+                try {
+                    document.getElementById('voiceSelect').innerHTML = '<option>Loading voices...</option>';
+                    
+                    const response = await fetch(`/tts/voices/?model=${modelId}`, {
+                        headers: {
+                            'xi-api-key': this.apiToken
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.voices = data.voices || [];
+                        this.renderVoices();
+                        console.log(`✅ Voices for ${modelId}:`, this.voices);
+                    } else {
+                        document.getElementById('voiceSelect').innerHTML = '<option>No voices found</option>';
+                        console.error(`Voices API failed: ${response.status}`);
+                    }
+                } catch (error) {
+                    document.getElementById('voiceSelect').innerHTML = '<option>Error loading voices</option>';
+                    console.error(`❌ Failed to load voices for ${modelId}:`, error);
+                }
+            }
+            
+
+            
+            renderModels(connectionTime) {
+                const select = document.getElementById('modelSelect');
+                select.innerHTML = '<option value="">Select TTS Model</option>';
+                
+                // Update section title with connection time
+                document.querySelectorAll('.section h3')[1].innerHTML = `🤖 TTS Model (${connectionTime}ms)`;
+                
+                this.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.model_id || model.id;
+                    option.textContent = model.name || model.model_id || model.id;
+                    select.appendChild(option);
+                });
+                
+                if (this.models.length > 0) {
+                    this.currentModel = this.models[0].model_id || this.models[0].id;
+                    select.value = this.currentModel;
+                }
+            }
+            
+            renderVoices(connectionTime) {
+                const select = document.getElementById('voiceSelect');
+                select.innerHTML = '<option value="">Select Voice</option>';
+                
+                // Update section title with connection time
+                document.querySelectorAll('.section h3')[2].innerHTML = `🔊 Voice Selection (${connectionTime}ms)`;
+                
+                this.voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.voice_id || voice.id || voice.name;
+                    
+                    // Get proper voice name and details
+                    const voiceName = voice.name || voice.voice_id || voice.id || 'Unknown Voice';
+                    const gender = voice.gender || voice.labels?.gender || '';
+                    const displayText = gender ? `${voiceName} (${gender})` : voiceName;
+                    
+                    option.textContent = displayText;
+                    select.appendChild(option);
+                });
+                
+                if (this.voices.length > 0) {
+                    this.currentVoice = this.voices[0].voice_id || this.voices[0].id || this.voices[0].name;
+                    select.value = this.currentVoice;
+                }
+            }
+            
+            async setupSpeechRecognition() {
+                if (!('webkitSpeechRecognition' in window)) {
+                    alert('Please use Chrome or Edge for best experience');
+                    return;
+                }
+                
+                // Enhanced audio setup with echo cancellation
+                try {
+                    this.userStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                            sampleRate: 16000
+                        }
+                    });
+                } catch (error) {
+                    console.error('Enhanced audio setup failed:', error);
+                }
+                
+                this.recognition = new webkitSpeechRecognition();
+                this.recognition.continuous = true;
+                this.recognition.interimResults = false;
+                this.recognition.lang = 'en-US';
+                
+                this.recognition.onstart = () => {
+                    document.getElementById('micStatus').innerHTML = '🎤 Listening...';
+                    document.getElementById('avatar').classList.add('active');
+                };
+                
+                this.recognition.onresult = (event) => {
+                    const transcript = event.results[event.results.length - 1][0].transcript.trim();
+                    if (transcript.length > 2) {
+                        this.addMessage('user', transcript);
+                        this.processMessage(transcript);
+                    }
+                };
+                
+                this.recognition.onend = () => {
+                    if (this.isActive) {
+                        setTimeout(() => this.recognition.start(), 500);
+                    }
+                };
+                
+                this.recognition.onerror = () => {
+                    document.getElementById('micStatus').innerHTML = '❌ Error';
+                };
+            }
+            
+            setupAudio() {
+                const audio = document.getElementById('audioPlayer');
+                audio.volume = 1.0; // Maximum volume
+                
+                audio.onplay = () => {
+                    document.getElementById('micStatus').innerHTML = '🔇 Muted (AI Speaking)';
+                    // Complete microphone shutdown during AI speech
+                    this.muteUserMicrophone();
+                    if (this.recognition) {
+                        this.recognition.stop();
+                    }
+                };
+                
+                audio.onended = () => {
+                    if (this.isActive) {
+                        document.getElementById('micStatus').innerHTML = '🎤 Listening...';
+                        // Extended delay with gradual unmute to prevent echo
+                        setTimeout(() => {
+                            this.unmuteUserMicrophone();
+                            setTimeout(() => {
+                                if (this.isActive && this.recognition) {
+                                    this.recognition.start();
+                                }
+                            }, 500); // Additional delay after unmute
+                        }, 1500); // Extended delay
+                    }
+                };
+            }
+            
+            async generateTTS(text) {
+                try {
+                    // Complete audio isolation during TTS generation
+                    this.muteUserMicrophone();
+                    if (this.recognition) {
+                        this.recognition.stop();
+                    }
+                    
+                    const ttsStartTime = performance.now();
+                    document.getElementById('ttsLatency').textContent = 'Generating...';
+                    
+                    const response = await fetch('/tts/generate-speech/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCSRFToken()
+                        },
+                        body: JSON.stringify({
+                            text: text,
+                            model: this.currentModel,
+                            voice: this.currentVoice,
+                            token: this.apiToken,
+                            tts_model: this.currentModel,
+                            voice_id: this.currentVoice
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success && data.audio_url) {
+                        const ttsLatency = Math.round(performance.now() - ttsStartTime);
+                        document.getElementById('ttsLatency').textContent = ttsLatency + 'ms';
+                        
+                        const audio = document.getElementById('audioPlayer');
+                        audio.src = data.audio_url;
+                        audio.volume = 1.0;
+                        audio.play();
+                    } else {
+                        document.getElementById('ttsLatency').textContent = 'Error';
+                        this.addErrorMessage('TTS Generation Error', 'Failed to generate speech audio');
+                    }
+                } catch (error) {
+                    document.getElementById('ttsLatency').textContent = 'Error';
+                    this.addErrorMessage('TTS Request Error', 'Failed to send TTS request');
+                    console.error('TTS generation error:', error);
+                }
+            }
+            
+            async processMessage(message) {
+                const overallStartTime = performance.now();
+                const llmStartTime = performance.now();
+                
+                try {
+                    // Show processing indicator
+                    document.getElementById('llmLatency').textContent = 'Processing...';
+                    document.getElementById('ttsLatency').textContent = 'Waiting...';
+                    
+                    const response = await fetch('/tts/chat/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCSRFToken()
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            model: 'nvidia/llama-3.3-nemotron-super-49b-v1',
+                            voice_id: this.currentVoice,
+                            model_id: this.currentModel,
+                            token: this.apiToken,
+                            auto_speak: true
+                        })
+                    });
+                    
+                    const llmEndTime = performance.now();
+                    const llmLatency = Math.round(llmEndTime - llmStartTime);
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.addMessage('agent', data.response);
+                        
+                        // Update LLM connection status on first successful response
+                        if (!this.llmConnected) {
+                            this.llmConnected = true;
+                            document.getElementById('llmModelTitle').innerHTML = `🧠 Connected LLM Model (${llmLatency}ms)`;
+                        }
+                        
+                        // Update LLM latency immediately
+                        document.getElementById('llmLatency').textContent = llmLatency + 'ms';
+                        
+                        if (data.audio_url) {
+                            // Start TTS timing
+                            const ttsStartTime = performance.now();
+                            document.getElementById('ttsLatency').textContent = 'Generating...';
+                            
+                            await this.playAudioWithTiming(data.audio_url, ttsStartTime, overallStartTime);
+                        } else {
+                            // No audio, update metrics
+                            const totalLatency = Math.round(performance.now() - overallStartTime);
+                            document.getElementById('ttsLatency').textContent = '0ms';
+                            document.getElementById('totalLatency').textContent = totalLatency + 'ms';
+                            
+                            this.sessionStats.totalLatency += totalLatency;
+                        }
+                        
+                        this.sessionStats.successful++;
+                        this.updateStats();
+                    } else {
+                        console.error('Chat error:', data.error);
+                        this.addErrorMessage('LLM Error', data.error || 'Failed to generate response');
+                        document.getElementById('llmLatency').textContent = 'Error';
+                        document.getElementById('ttsLatency').textContent = 'Error';
+                    }
+                    
+                    this.sessionStats.turns++;
+                    this.updateStats();
+                    
+                } catch (error) {
+                    this.addErrorMessage('Connection Error', 'Failed to connect to AI service. Please try again.');
+                    document.getElementById('llmLatency').textContent = 'Error';
+                    document.getElementById('ttsLatency').textContent = 'Error';
+                    console.error('Error:', error);
+                    this.sessionStats.turns++;
+                    this.updateStats();
+                }
+            }
+            
+            async playAudioWithTiming(audioUrl, ttsStartTime, overallStartTime) {
+                const audio = document.getElementById('audioPlayer');
+                
+                return new Promise((resolve) => {
+                    audio.onloadeddata = () => {
+                        const ttsLatency = Math.round(performance.now() - ttsStartTime);
+                        const totalLatency = Math.round(performance.now() - overallStartTime);
+                        
+                        // Update real-time metrics
+                        document.getElementById('ttsLatency').textContent = ttsLatency + 'ms';
+                        document.getElementById('totalLatency').textContent = totalLatency + 'ms';
+                        
+                        this.sessionStats.totalLatency += totalLatency;
+                        
+                        audio.onended = () => {
+                            resolve();
+                            this.updateStats(); // Update after audio completes
+                        };
+                        
+                        audio.onerror = () => {
+                            document.getElementById('ttsLatency').textContent = 'Audio Error';
+                            this.addErrorMessage('TTS Audio Error', 'Failed to play generated audio');
+                            resolve();
+                        };
+                        
+                        audio.volume = 1.0;
+                        audio.play();
+                    };
+                    
+                    audio.onerror = () => {
+                        document.getElementById('ttsLatency').textContent = 'Load Error';
+                        this.addErrorMessage('TTS Load Error', 'Failed to load audio file');
+                        resolve();
+                    };
+                    
+                    audio.src = audioUrl;
+                });
+            }
+            
+            addMessage(type, content) {
+                const conversation = document.getElementById('conversation');
+                const message = document.createElement('div');
+                message.className = `message ${type}-msg`;
+                
+                let displayName = 'You';
+                if (type === 'agent') {
+                    const modelName = this.models.find(m => (m.model_id || m.id) === this.currentModel)?.name || this.currentModel || 'TTS';
+                    const voiceName = this.voices.find(v => (v.voice_id || v.id) === this.currentVoice)?.name || this.currentVoice || 'Voice';
+                    displayName = `${modelName} / ${voiceName}`;
+                }
+                
+                message.innerHTML = `<strong>${displayName}:</strong> ${content}`;
+                conversation.appendChild(message);
+                conversation.scrollTop = conversation.scrollHeight;
+            }
+            
+            addErrorMessage(errorType, errorDetails) {
+                const conversation = document.getElementById('conversation');
+                const message = document.createElement('div');
+                message.className = 'message error-msg';
+                message.innerHTML = `<strong>⚠️ ${errorType}:</strong> ${errorDetails}`;
+                conversation.appendChild(message);
+                conversation.scrollTop = conversation.scrollHeight;
+            }
+            
+            updateStats() {
+                const { turns, successful, totalLatency } = this.sessionStats;
+                const avgLatency = successful > 0 ? Math.round(totalLatency / successful) : 0;
+                const successRate = turns > 0 ? Math.round((successful / turns) * 100) : 100;
+                
+                // Update with real data
+                document.getElementById('turnCount').textContent = turns;
+                document.getElementById('successRate').textContent = successRate + '%';
+                document.getElementById('avgLatency').textContent = avgLatency + 'ms';
+                
+                // Add visual feedback for performance
+                const avgElement = document.getElementById('avgLatency');
+                if (avgLatency < 2000) {
+                    avgElement.style.color = '#00ff88'; // Green for fast
+                } else if (avgLatency < 4000) {
+                    avgElement.style.color = '#ffd700'; // Yellow for medium
+                } else {
+                    avgElement.style.color = '#ff6b6b'; // Red for slow
+                }
+            }
+            
+            updateDuration() {
+                if (!this.startTime) return;
+                const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('duration').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            muteUserMicrophone() {
+                if (this.userStream) {
+                    this.userStream.getAudioTracks().forEach(track => {
+                        track.enabled = false;
+                    });
+                }
+            }
+            
+            unmuteUserMicrophone() {
+                if (this.userStream) {
+                    this.userStream.getAudioTracks().forEach(track => {
+                        track.enabled = true;
+                    });
+                }
+            }
+            
+            getCSRFToken() {
+                return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+        }
+        
+        let agent = new ProductionVoiceAgent();
+        
+        function toggleCall() {
+            const btn = document.getElementById('callBtn');
+            const status = document.getElementById('statusText');
+            
+            if (!agent.isActive) {
+                // Start call
+                agent.isActive = true;
+                agent.startTime = Date.now();
+                agent.durationTimer = setInterval(() => agent.updateDuration(), 1000);
+                
+                btn.classList.add('active');
+                btn.innerHTML = '📞';
+                status.textContent = 'Connected - Speak naturally';
+                document.getElementById('micStatus').innerHTML = 'Starting...';
+                
+                agent.recognition.start();
+                
+                // Hide instructions and start conversation
+                document.getElementById('instructions').style.display = 'none';
+                
+                // Stop any existing recognition before welcome
+                if (agent.recognition) {
+                    agent.recognition.stop();
+                }
+                
+                // Generate and play welcome message
+                const welcomeMessage = `Hello! I'm using ${agent.currentVoice} voice. What would you like to talk about?`;
+                agent.addMessage('agent', welcomeMessage);
+                agent.generateTTS(welcomeMessage); // Generate TTS for welcome
+                
+            } else {
+                // End call
+                agent.isActive = false;
+                agent.recognition.stop();
+                clearInterval(agent.durationTimer);
+                
+                btn.classList.remove('active');
+                btn.innerHTML = '📞';
+                status.textContent = 'Call Ended';
+                document.getElementById('micStatus').innerHTML = 'Ready to Talk';
+                document.getElementById('avatar').classList.remove('active');
+                
+                setTimeout(() => {
+                    status.textContent = 'Ready to Talk';
+                    document.getElementById('duration').textContent = '00:00';
+                }, 3000);
+            }
+        }
+        
+        ProductionVoiceAgent.prototype.selectModel = function(modelId) {
+            this.currentModel = modelId;
+            const modelName = this.models.find(m => (m.model_id || m.id) === modelId)?.name || modelId;
+            
+            // Load only voices for this model
+            if (modelId) {
+                this.loadVoicesForModel(modelId);
+            } else {
+                this.voices = this.allVoices;
+                this.renderVoices();
+            }
+            
+            if (this.isActive) {
+                this.addMessage('agent', `TTS model changed to ${modelName}`);
+            }
+        };
+        
+        ProductionVoiceAgent.prototype.selectVoice = function(voiceId) {
+            this.currentVoice = voiceId;
+            const voice = this.voices.find(v => (v.voice_id || v.id) === voiceId);
+            const voiceName = voice?.name || voiceId;
+            
+            if (this.isActive) {
+                const message = `Voice changed to ${voiceName}. How does this sound?`;
+                this.addMessage('agent', message);
+                this.generateTTS(message); // Play the voice change message
+            }
+        };
+    </script>
+</body>
+</html>

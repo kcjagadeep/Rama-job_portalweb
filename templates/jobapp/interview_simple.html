@@ -5,167 +5,234 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Interview - {{ candidate_name }}</title>
-    <link rel="stylesheet" href="{% static 'css/professional-interview.css' %}">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #202124 !important;
+            color: white !important;
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
             margin: 0;
             padding: 0;
             height: 100vh;
             overflow: hidden;
         }
+        html {
+            background: #202124 !important;
+        }
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 20px;
+            position: relative;
         }
         .header {
-            text-align: center;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 15px;
+            position: absolute;
+            top: 16px;
+            left: 24px;
+            z-index: 100;
         }
         .header h1 {
-            font-size: 1.4rem;
-            font-weight: 300;
+            font-size: 18px;
+            font-weight: 400;
             margin: 0;
-            opacity: 0.9;
+            color: #e8eaed;
         }
         .video-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            height: 55vh;
-            margin-bottom: 15px;
+            gap: 8px;
+            width: 100%;
+            height: calc(100vh - 120px);
+            padding: 16px;
+            background: #202124;
         }
         .video-box {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             position: relative;
-            border: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.3s ease;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #3c4043;
+            border: 2px solid transparent;
         }
-        .ai-avatar-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .video-box.speaking {
+            border-color: #34a853;
         }
-        .ai-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            margin-bottom: 10px;
-        }
-        .ai-avatar::before {
-            content: '';
-            position: absolute;
+        .ai-placeholder {
             width: 100%;
             height: 100%;
+            background: #3c4043;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .ai-avatar {
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-            animation: siri-pulse 2s ease-in-out infinite;
-            z-index: -1;
+            background: #1a73e8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
         }
         .ai-avatar-icon {
-            font-size: 1.8rem;
+            font-size: 48px;
             color: white;
         }
-        .ai-speaking {
-            border: 2px solid transparent;
-            background: linear-gradient(45deg, #4facfe, #00f2fe, #4facfe, #00f2fe) border-box;
-            background-clip: padding-box;
-            animation: gradient-border 2s ease-in-out infinite;
-        }
-        .ai-speaking .ai-avatar {
-            background: linear-gradient(45deg, #4facfe, #00f2fe, #ff6b6b, #4facfe);
-            background-size: 300% 300%;
-            animation: gradient-flow 1.5s ease-in-out infinite;
-        }
-        .candidate-speaking {
-            border-color: #4caf50 !important;
-            box-shadow: 0 0 30px rgba(76, 175, 80, 0.4);
+        .ai-name {
+            color: #e8eaed;
+            font-size: 16px;
+            font-weight: 400;
         }
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 12px;
-            transform: scaleX(-1);  /* THIS IS THE FIX - Mirrors video like selfie camera */
+            transform: scaleX(-1);
         }
         .participant-name {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        .ai-name {
+            bottom: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.7);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 400;
             color: white;
-            font-size: 1.1rem;
-            font-weight: 300;
-            opacity: 0.9;
         }
-
-         /* FIXED: Timer in top-right corner, separate from candidate name */
-        .timer-overlay {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: rgba(0,0,0,0.85);
-            padding: 10px 18px;
-            border-radius: 25px;
-            font-size: 20px;
-            font-weight: bold;
-            backdrop-filter: blur(10px);
-            border: 2px solid #4caf50;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-
-        /* NEW: Recording indicator in top-left corner */
         .recording-indicator {
             position: absolute;
-            top: 16px;
-            left: 16px;
-            background: rgba(244, 67, 54, 0.9);  /* Red background */
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
+            top: 12px;
+            left: 12px;
+            background: #ea4335;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
             color: white;
             display: flex;
             align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+            gap: 4px;
         }
         .recording-dot {
-            width: 10px;
-            height: 10px;
+            width: 6px;
+            height: 6px;
             background: white;
             border-radius: 50%;
-            animation: blink-recording 1.5s ease-in-out infinite;  /* Blinking effect */
-        
+            animation: blink-recording 1.5s ease-in-out infinite;
         }
-
+        .face-detection-status {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(234, 67, 53, 0.9);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 400;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+        .face-detection-status .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #ea4335;
+            border-radius: 50%;
+            animation: blink-status 2s ease-in-out infinite;
+        }
+        .face-detection-status.active {
+            background: rgba(52, 168, 83, 0.9);
+        }
+        .face-detection-status.active .status-dot {
+            background: #34a853;
+        }
+        .controls {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            background: rgba(60, 64, 67, 0.9);
+            padding: 12px 24px;
+            border-radius: 32px;
+            z-index: 100;
+        }
+        .btn {
+            background: #3c4043;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:hover {
+            background: #5f6368;
+        }
+        .btn.end-call {
+            background: #ea4335;
+            padding: 12px 24px;
+            border-radius: 24px;
+            width: auto;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .transcript-section {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(60, 64, 67, 0.9);
+            padding: 16px 24px;
+            border-radius: 8px;
+            max-width: 600px;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99;
+        }
+        .conversation-text {
+            color: white;
+            font-size: 16px;
+            line-height: 1.4;
+            text-align: center;
+            font-weight: 400;
+        }
+        .audio-status {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 115, 232, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            display: none;
+        }
+        .audio-status.playing {
+            display: block;
+            background: #ff9800;
+        }
+        .audio-status.listening {
+            display: block;
+            background: #4caf50;
+        }
         @keyframes blink-recording {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
@@ -174,1211 +241,405 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
-        .face-detection-status.active {
-            background: rgba(76, 175, 80, 0.9) !important;
-        }
-        .face-detection-status.active .status-dot {
-            background: #4caf50 !important;
-        }
-        .controls {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        {% comment %} .btn {
-            color: white;
-            border: none;
-            padding: 10px 12px;       /* ← More padding for rectangular shape */
-            border-radius: 28px;      /* ← CHANGED: Less rounded (was 50px) */
-            font-size: 18px;          /* ← Slightly larger icon */
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 45px;          /* ← Google Meet size */
-            height: 45px;             /* ← Google Meet size */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        } {% endcomment %}
-         /* FIXED: Button styling - cleaner backgrounds like Google Meet */
-        .btn {
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 6px;
-            border-radius: 50%;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .btn:hover {
-            transform: scale(1.05);
-            background: rgba(255,255,255,0.3);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        }
-        {% comment %} .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        } {% endcomment %}
-        {% comment %} .btn.mic {
-            background: #4caf50;
-        } {% endcomment %}
-         /* Microphone button - green when active */
-        .btn.mic {
-            background: rgba(60, 64, 67, 0.95);
-        }
-        .btn.mic.recording {
-            background: #4caf50;
-            animation: recording-pulse 1s infinite;
-        }
-        .btn.mic.disabled {
-            background: #666;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-        {% comment %} .btn.camera {
-            background: #2196f3;
-        } {% endcomment %}
-        {% comment %} .btn.camera.off {
-            background: #666;
-        } {% endcomment %}
-        .btn.end-call {
-            background: #f44336;
-        }
-        {% comment %} .transcript-section {
-            background: #303134;
-            padding: 20px 25px;
-            border-radius: 12px;
-            margin: 0 0 15px 0;
-            padding-bottom: 120px;  /* CRITICAL: Space for buttons at bottom - prevents overlap */
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border: 2px solid #444;
-            min-height: 120px;  /* ← CHANGE TO: 150px (50% smaller) */
-            max-height: 180px;  /* Added max-height to control size */
-            overflow: hidden;
-        } {% endcomment %}
-         
-        .transcript-section {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(20px);
-            padding: 15px;
-            border-radius: 20px;
-            margin: 0 0 15px 0;
-            border: 1px solid rgba(255,255,255,0.2);
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .conversation-text {
-            color: white;
-            font-size: 1rem;
-            line-height: 1.4;
-            text-align: center;
-            font-weight: 300;
-        }
-        .stats {
-            display: none;
-        }
-        .stat {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(20px);
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-weight: 500;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        .audio-status {
-            position: fixed;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(26, 115, 232, 0.9);
-            backdrop-filter: blur(20px);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            z-index: 1000;
-            display: none;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        .audio-status.playing {
-            display: block;
-            background: #ff9800;
-            animation: status-pulse 2s ease-in-out infinite;
-        }
-        .audio-status.listening {
-            display: block;
-            background: #4caf50;
-            animation: status-pulse 2s ease-in-out infinite;
-        }
-        
-        /* Animations */
-        @keyframes siri-pulse {
-            0% { transform: scale(1); opacity: 0.7; }
-            50% { transform: scale(1.1); opacity: 0.9; }
-            100% { transform: scale(1); opacity: 0.7; }
-        }
-        @keyframes gradient-border {
-            0%, 100% { box-shadow: 0 0 20px rgba(79, 172, 254, 0.5); }
-            50% { box-shadow: 0 0 30px rgba(0, 242, 254, 0.8); }
-        }
-        @keyframes gradient-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        @keyframes recording-pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-            50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-        }
-        @keyframes status-pulse {
-            0%, 100% { opacity: 0.9; }
-            50% { opacity: 1; }
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Audio status indicator -->
         <div class="audio-status" id="audioStatus"></div>
 
-        <!-- Professional Header -->
         <div class="header">
             <h1>Interview Session for {{ candidate_name }}</h1>
-            <p style="font-size: 1.1rem; margin: 5px 0 0 0; opacity: 0.8; font-weight: 400;">{{ job_title }} by {{ company_name }}</p>
         </div>
 
-        <!-- Hidden stats section -->
-        <div class="stats" style="display: none;">
-            <div class="stat"><span id="questionCount"></span></div> 
+        <!-- Timer in top-right -->
+        <div style="position: absolute; top: 24px; right: 24px; background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 4px; font-size: 14px; z-index: 100; color: white;">
+            <span id="timer">{{ interview.interview_duration_minutes|default:"15" }}:00</span>
         </div>
         
-        
-         {% comment %} <div class="stats">
-            <div class="stat"> <span id="questionCount"></span></div> 
-            <div class="stat">Time: <span id="timer">15:00</span></div> 
-        </div>  {% endcomment %}
-        
         <div class="video-grid">
+            <!-- AI Interviewer -->
             <div class="video-box" id="aiVideoBox">
-                <div class="ai-avatar-container">
+                <div class="ai-placeholder">
                     <div class="ai-avatar" id="aiAvatar">
                         <div class="ai-avatar-icon">🤖</div>
                     </div>
                     <div class="ai-name">Sarah - AI Interviewer</div>
                 </div>
+                <div class="participant-name">Sarah - AI Interviewer</div>
             </div>
+            
+            <!-- User Video -->
             <div class="video-box" id="candidateVideoBox">
                 <video id="userVideo" autoplay muted playsinline></video>
-
-                <!-- NEW: Recording indicator in top-left -->
+                
                 <div class="recording-indicator">
                     <div class="recording-dot"></div>
                     <span>REC</span>
                 </div>
-
-                <!-- Face Detection Status Indicator -->
-                <div class="face-detection-status" id="faceStatus" style="
-                    position: absolute;
-                    bottom: 60px;
-                    left: 16px;
-                    background: rgba(244, 67, 54, 0.9);
-                    padding: 6px 12px;
-                    border-radius: 15px;
-                    font-size: 12px;
-                    font-weight: bold;
-                    color: white;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    backdrop-filter: blur(10px);
-                    transition: all 0.3s ease;
-                ">
-                    <div class="status-dot" style="
-                        width: 8px;
-                        height: 8px;
-                        background: #ff4444;
-                        border-radius: 50%;
-                        animation: blink-status 2s ease-in-out infinite;
-                    "></div>
+                
+                <div class="participant-name">{{ candidate_name|default:"You" }}</div>
+                
+                <div class="face-detection-status" id="faceStatus">
+                    <div class="status-dot"></div>
                     <span>Face Detection: OFF</span>
                 </div>
-
-                <!-- Candidate name at bottom-left -->
-                <div class="participant-name">{{ candidate_name|default:"Candidate" }}</div>
-
-                
-                <!-- NEW: Timer moved here, positioned on top-right of video -->
-                <div class="timer-overlay">
-                    <span id="timer">{{ interview.interview_duration_minutes|default:"15" }}:00</span>
-                </div>
-
-                <!-- Compact controls in bottom-right -->
-                <div class="controls">
-                    <button class="btn mic" id="micBtn" onclick="toggleMic()" title="Toggle Microphone" style="display: none;">🎤</button>
-                    <button class="btn" onclick="startFaceDetection()" title="Start Face Detection" style="background: #2196f3; padding: 8px 12px; border-radius: 20px; font-size: 12px;">👁️ Face</button>
-                    <button class="btn end-call" onclick="endInterview()" title="End Interview" style="padding: 12px 20px; width: auto; border-radius: 25px; font-size: 1rem; font-weight: 500;">End Interview</button>
-                </div>
             </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn mic" id="micBtn" onclick="toggleMic()" title="Microphone">🎤</button>
+            <button class="btn" onclick="startFaceDetection()" title="Face Detection">👁️</button>
+            <button class="btn end-call" onclick="endInterview()">End Interview</button>
         </div>
 
         <div class="transcript-section">
-            <div class="conversation-text" id="conversationArea">
-                
-            </div>
+            <div class="conversation-text" id="conversationArea"></div>
         </div>
-
-
     </div>
 
-    <!-- Audio element for playing interviewer's voice -->
     <audio id="aiAudio" preload="auto"></audio>
-    
-    <!-- CSRF Token -->
     {% csrf_token %}
-    
-    <!-- Load typewriter script -->
     <script src="{% static 'js/typewriter-sync.js' %}"></script>
-    
-    <!-- Load face tracking script -->
     <script src="{% static 'js/face-tracking.js' %}"></script>
     
+    <!-- Real-time Voice Agent Integration -->
+    {% include 'jobapp/voice_agent_widget.html' %}
+
     <script>
-    // Force face tracking initialization
-    window.initFaceTracking = function() {
-        const video = document.getElementById('userVideo');
-        if (video) {
-            console.log('🎯 Force initializing face tracking');
-            const tracker = new FaceTracker(video);
-            tracker.start();
-        }
+    const TEMPLATE_DATA = {
+        initialQuestion: `{{ ai_question|escapejs|default:"Welcome to your AI interview! Let's begin." }}`,
+        initialAudio: `{{ audio_url|escapejs|safe }}`,
+        initialDuration: {{ audio_duration|default:5 }},
+        candidateName: `{{ candidate_name|escapejs|default:"Candidate" }}`,
+        interviewUuid: `{{ interview.uuid|default:"" }}`,
+        hasAudio: {{ has_audio|yesno:"true,false" }},
+        csrfToken: `{{ csrf_token }}`
     };
-    </script>
 
-    <script>
-    // Template data passed from Django
-const TEMPLATE_DATA = {
-    initialQuestion: `{{ ai_question|escapejs|default:"Welcome to your AI interview! Let's begin." }}`,
-    initialAudio: `{{ audio_url|escapejs|safe }}`,
-    initialDuration: {{ audio_duration|default:5 }},
-    candidateName: `{{ candidate_name|escapejs|default:"Candidate" }}`,
-    interviewUuid: `{{ interview.uuid|default:"" }}`,
-    hasAudio: {{ has_audio|yesno:"true,false" }},
-    csrfToken: `{{ csrf_token }}`
-};
+    let recognition = null;
+    let isListening = false;
+    let questionCount = 1;
+    let timeLeft = {{ interview.interview_duration_minutes|default:"15" }} * 60;
+    let userStream = null;
+    let collectedText = '';
+    let speechTimeout = null;
+    let isProcessingResponse = false;
+    let isInterviewerSpeaking = false;
+    let interviewCompleted = false;
+    let audioEndedTimeout = null;
+    let screenshots = [];
+    let screenshotInterval = null;
 
-// Global variables
-let recognition = null;
-let isListening = false;
-let questionCount = 1;
-let timeLeft = {{ interview.interview_duration_minutes|default:"15" }} * 60; // Interview duration in seconds - CRITICAL FOR TIMER
-let userStream = null;
-let isCameraOn = true;
-let collectedText = '';
-let speechTimeout = null;
-let isProcessingResponse = false;
-let isInterviewerSpeaking = false;
-let interviewCompleted = false;
-let audioEndedTimeout = null;
-let isInitialized = false;
+    const conversationArea = document.getElementById('conversationArea');
+    const audioStatus = document.getElementById('audioStatus');
+    const micBtn = document.getElementById('micBtn');
 
-// UI Elements
-const conversationArea = document.getElementById('conversationArea');
-const audioStatus = document.getElementById('audioStatus');
-const micBtn = document.getElementById('micBtn');
-const cameraBtn = document.getElementById('cameraBtn');
+    function log(message) {
+        console.log(`[${new Date().toLocaleTimeString()}] ${message}`);
+    }
 
-// Simple logging for debugging
-function log(message) {
-    console.log(`[${new Date().toLocaleTimeString()}] ${message}`);
-}
-
-log('AI Interview System Starting...');
-
-// Initialize camera and microphone
-async function initCamera() {
-    try {
-        log('Requesting camera and microphone permissions...');
+    async function initCamera() {
+        try {
+            userStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
+                audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false }
+            });
+            document.getElementById('userVideo').srcObject = userStream;
+            startScreenshotCapture();
+            return true;
+        } catch (error) {
+            conversationArea.innerHTML = `<div style="color: #f44336;">Please allow camera and microphone access, then refresh.</div>`;
+            return false;
+        }
+    }
+    
+    function captureScreenshot(reason = 'scheduled') {
+        const video = document.getElementById('userVideo');
+        if (!video || video.videoWidth === 0) return;
         
-        userStream = await navigator.mediaDevices.getUserMedia({ 
-            video: {
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                facingMode: 'user'
-            }, 
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: false,  // Turn off - can interfere
-                autoGainControl: false,   // Turn off - can distort
-                sampleRate: 16000,        // Optimal for Whisper
-                channelCount: 1           // Mono is fine for speech
-            }
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        screenshots.push({
+            timestamp: new Date().toISOString(),
+            image: imageData,
+            reason: reason
         });
         
-        const videoElement = document.getElementById('userVideo');
-        videoElement.srcObject = userStream;
+        console.log(`Screenshot captured (${reason}): ${screenshots.length}`);
         
-        log('Camera and microphone access granted');
-        return true;
-        
-    } catch (error) {
-        log(`Media access error: ${error.message}`);
-        conversationArea.innerHTML = 
-            `<div style="color: #f44336; padding: 20px;">Please allow camera and microphone access, then refresh this page.</div>`;
-        return false;
+        // Send immediate screenshot for second person detection
+        if (reason === 'second_person_detected') {
+            sendScreenshotToServer(imageData, reason);
+        }
     }
-}
+    
+    function sendScreenshotToServer(imageData, reason) {
+        fetch('/interview/screenshot/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': TEMPLATE_DATA.csrfToken
+            },
+            body: JSON.stringify({
+                screenshot: imageData,
+                interview_id: TEMPLATE_DATA.interviewUuid,
+                timestamp: new Date().toISOString(),
+                reason: reason
+            })
+        }).then(response => {
+            if (response.ok) {
+                console.log(`Screenshot sent to server: ${reason}`);
+            }
+        }).catch(error => {
+            console.error('Failed to send screenshot:', error);
+        });
+    }
+    
+    // Make captureScreenshot globally available
+    window.captureScreenshot = captureScreenshot;
+    
+    function startScreenshotCapture() {
+        screenshotInterval = setInterval(() => captureScreenshot('scheduled'), 10000); // Every 10 seconds
+    }
+    
+    function stopScreenshotCapture() {
+        if (screenshotInterval) {
+            clearInterval(screenshotInterval);
+            screenshotInterval = null;
+        }
+    }
 
-// Initialize speech recognition
-function initSpeech() {
-    log('Initializing speech recognition...');
-    
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        log('Web Speech API not supported - will use Whisper ASR fallback');
-        conversationArea.innerHTML = 
-            `<div style="color: #4caf50; padding: 20px;">Using server-side speech recognition. Click microphone to record audio.</div>`;
-        // Enable Whisper mode
-        window.useWhisperASR = true;
-        return true; // Continue with Whisper mode
-    }
-    
-    window.useWhisperASR = false; // Use Web Speech API
-    
-    try {
+    function initSpeech() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            window.useWhisperASR = true;
+            return true;
+        }
+        
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
         recognition = new SpeechRecognition();
-        
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
-        recognition.maxAlternatives = 1;
         
-        recognition.onstart = function() {
+        recognition.onstart = () => {
             isListening = true;
             micBtn.classList.add('recording');
-            document.getElementById('candidateVideoBox').classList.add('candidate-speaking');
-            log('Speech recognition started');
+            document.getElementById('candidateVideoBox').classList.add('speaking');
         };
         
-        recognition.onend = function() {
-            document.getElementById('candidateVideoBox').classList.remove('candidate-speaking');
-            log('Speech recognition ended');
-            
-            // Auto-restart if still listening and not during interviewer speech
+        recognition.onend = () => {
+            document.getElementById('candidateVideoBox').classList.remove('speaking');
             if (isListening && !interviewCompleted && !isInterviewerSpeaking) {
-                setTimeout(() => {
-                    try {
-                        if (recognition && isListening) {
-                            recognition.start();
-                            log('Speech recognition restarted');
-                        }
-                    } catch (e) {
-                        log(`Could not restart recognition: ${e.message}`);
-                    }
-                }, 100);
+                setTimeout(() => recognition && isListening && recognition.start(), 100);
             }
         };
         
-        recognition.onerror = function(event) {
-            log(`Speech recognition error: ${event.error}`);
-            document.getElementById('candidateVideoBox').classList.remove('candidate-speaking');
-            
-            // Add specific error handling for different error types
-            if (event.error === 'network') {
-                // Switch to Whisper mode
-                window.useWhisperASR = true;
-                initWhisperRecording();
-                conversationArea.innerHTML = 
-                    `<div style="color: #4caf50; padding: 20px;">Switched to server-side speech recognition due to network issues.</div>`;
-            } else if (event.error === 'not-allowed') {
-                conversationArea.innerHTML = 
-                    `<div style="color: #4caf50; padding: 20px;">Microphone access denied. Please allow microphone access and refresh.</div>`;
-            } else if (event.error === 'no-speech') {
-                log('No speech detected, continuing...');
-            } else {
-                log(`Unhandled speech error: ${event.error}`);
-            }
-        };
-        
-        recognition.onresult = function(event) {
-            let interimTranscript = '';
+        recognition.onresult = (event) => {
             let finalTranscript = '';
-            
             for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    finalTranscript += transcript;
-                } else {
-                    interimTranscript += transcript;
+                    finalTranscript += event.results[i][0].transcript;
                 }
             }
             
-            // Only process speech when candidate can speak
-            if (!isInterviewerSpeaking && !isProcessingResponse && !interviewCompleted) {
-                
-                // Show live transcription
-                const displayText = collectedText + finalTranscript + 
-                    (interimTranscript ? `<span style="opacity: 0.7; font-style: italic; color: #90a4ae;">${interimTranscript}</span>` : '');
-                
-                if (displayText.trim()) {
-                    conversationArea.innerHTML = 
-                        `<div style="color: #81c784; font-style: italic;">"${displayText}"</div>`;
-                }
-            
-                if (finalTranscript.trim()) {
-                    collectedText += finalTranscript;
-                    log(`Speech captured: "${finalTranscript}"`);
-                
-                    // Clear existing timeout
-                    if (speechTimeout) {
-                        clearTimeout(speechTimeout);
-                    }
-                
-                    // Auto-submit after pause - increased timeout for better speech capture
-                    speechTimeout = setTimeout(() => {
-                        if (collectedText.trim() && !isProcessingResponse && !isInterviewerSpeaking && !interviewCompleted) {
-                            autoSubmitResponse();
-                        }
-                    }, 5000); // Increased from 3000 to 5000ms
-                }
+            if (finalTranscript.trim() && !isInterviewerSpeaking && !isProcessingResponse) {
+                collectedText += finalTranscript;
+                if (speechTimeout) clearTimeout(speechTimeout);
+                speechTimeout = setTimeout(() => {
+                    if (collectedText.trim()) autoSubmitResponse();
+                }, 3000);
             }
         };
         
-        log('Speech recognition initialized successfully');
         return true;
-        
-    } catch (error) {
-        log(`Error initializing speech: ${error.message}`);
-        return false;
     }
-}
 
-// Start microphone
-function startMicrophone() {
-    if (recognition && !isListening && !interviewCompleted && !isInterviewerSpeaking) {
-        try {
-            isListening = true;
-            recognition.start();
-            micBtn.classList.add('recording');
-            log('Microphone started - ready to listen');
-        } catch (e) {
-            log(`Failed to start microphone: ${e.message}`);
-            if (e.name === 'InvalidStateError') {
-                isListening = true; // Already running
-            } else {
-                isListening = false;
-                micBtn.classList.remove('recording');
+    function startMicrophone() {
+        if (recognition && !isListening && !interviewCompleted && !isInterviewerSpeaking) {
+            try {
+                isListening = true;
+                recognition.start();
+            } catch (e) {
+                if (e.name === 'InvalidStateError') isListening = true;
             }
         }
     }
-}
 
-// Stop microphone
-function stopMicrophone() {
-    if (recognition && isListening) {
-        try {
+    function stopMicrophone() {
+        if (recognition && isListening) {
             recognition.stop();
             isListening = false;
-            micBtn.classList.remove('recording');
-            log('Microphone stopped');
-        } catch (e) {
-            log(`Error stopping microphone: ${e.message}`);
         }
     }
-}
 
-// Auto-submit response
-function autoSubmitResponse() {
-    if (isProcessingResponse || isInterviewerSpeaking || !collectedText.trim() || interviewCompleted) {
-        return;
+    function autoSubmitResponse() {
+        if (isProcessingResponse || !collectedText.trim()) return;
+        
+        isProcessingResponse = true;
+        const responseText = collectedText.trim();
+        collectedText = '';
+        stopMicrophone();
+        
+        conversationArea.innerHTML = '<div style="opacity: 0.7;">Processing...</div>';
+        sendResponse(responseText).finally(() => isProcessingResponse = false);
     }
-    
-    log(`Submitting response (Time remaining: ${timeLeft}s): "${collectedText.substring(0, 50)}..."`);
-    isProcessingResponse = true;
-    
-    if (speechTimeout) {
-        clearTimeout(speechTimeout);
-        speechTimeout = null;
-    }
-    
-    const responseText = collectedText.trim();
-    collectedText = '';
-    
-    // Stop listening during processing
-    stopMicrophone();
-    
-    conversationArea.innerHTML = 
-        `<div style="opacity: 0.7; font-style: italic;">Processing your response...</div>`;
-    
-    sendResponse(responseText).finally(() => {
-        isProcessingResponse = false;
-    });
-}
 
-// Send response to server - FIXED TO ALWAYS INCLUDE TIME
-async function sendResponse(text) {
-    try {
-        log(`Sending response to server with ${timeLeft}s remaining`);
-        
-        const response = await fetch(window.location.href, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': TEMPLATE_DATA.csrfToken,
-            },
-            body: new URLSearchParams({ 
-                text: text,
-                time_remaining: timeLeft  // CRITICAL: Send current time
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        log('Server response received');
-        
-        if (data.success) {
-            questionCount = data.question_count || questionCount + 1;
-            document.getElementById('questionCount').textContent = `${questionCount}/∞`;  // Show infinity symbol
+    async function sendResponse(text) {
+        try {
+            const formData = new FormData();
+            formData.append('text', text);
+            formData.append('time_remaining', timeLeft);
+            formData.append('screenshots', JSON.stringify(screenshots));
             
-            setTimeout(() => {
-                showCurrentQuestion(data.response, data.audio, data.audio_duration);
-            }, 100); //Reduced from 500ms to 100ms
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': TEMPLATE_DATA.csrfToken },
+                body: formData
+            });
             
-            if (data.interview_completed || data.is_final) {
-                log('Interview completed');
-                interviewCompleted = true;
+            const data = await response.json();
+            if (data.success) {
+                setTimeout(() => showCurrentQuestion(data.response, data.audio, data.audio_duration), 100);
+                if (data.interview_completed) {
+                    interviewCompleted = true;
+                    stopScreenshotCapture();
+                }
             }
-        } else {
-            log('Server returned error');
-            conversationArea.innerHTML = 
-                `<div style="color: #f44336; padding: 20px;">Error processing response. Please try again.</div>`;
+        } catch (error) {
+            conversationArea.innerHTML = '<div style="color: #f44336;">Network error. Please try again.</div>';
             enableCandidateResponse();
         }
-    } catch (error) {
-        log(`Network error: ${error.message}`);
-        conversationArea.innerHTML = 
-            `<div style="color: #f44336; padding: 20px;">Network error. Please check connection and try again.</div>`;
-        enableCandidateResponse();
     }
-}
 
-// Show current question
-function showCurrentQuestion(question, audioUrl = null, audioDuration = null) {
-    log(`Showing question: ${question.substring(0, 50)}...`);
-    
-    conversationArea.innerHTML = '';
-    isProcessingResponse = true;
-    isInterviewerSpeaking = true;
-    
-    // Stop speech recognition during interviewer speaking
-    stopMicrophone();
-    
-    micBtn.classList.add('disabled');
-    document.getElementById('aiVideoBox').classList.add('ai-speaking');
-    
-    if (audioEndedTimeout) {
-        clearTimeout(audioEndedTimeout);
-        audioEndedTimeout = null;
-    }
-    
-    // Check for valid audio
-    const hasValidAudio = audioUrl && 
-                          audioUrl.trim() !== '' && 
-                          audioUrl !== 'None' && 
-                          audioDuration && 
-                          audioDuration > 0;
-    
-    if (hasValidAudio) {
-        log('Playing audio with question');
+    function showCurrentQuestion(question, audioUrl = null, audioDuration = null) {
+        conversationArea.innerHTML = '';
+        isProcessingResponse = true;
+        isInterviewerSpeaking = true;
+        stopMicrophone();
         
-        audioStatus.className = 'audio-status playing';
-        audioStatus.textContent = 'Interviewer speaking - Please listen';
-        audioStatus.style.display = 'block';
+        document.getElementById('aiVideoBox').classList.add('speaking');
         
-        const audio = document.getElementById('aiAudio');
-        audio.pause();
-        audio.currentTime = 0;
-        audio.src = audioUrl.startsWith('/media/') ? audioUrl : `/media/${audioUrl.replace(/^\/+/, '')}`;
-        audio.volume = 0.8;
-        
-        const onCanPlay = () => {
-            audio.removeEventListener('canplaythrough', onCanPlay);
+        if (audioUrl && audioDuration > 0) {
+            audioStatus.className = 'audio-status playing';
+            audioStatus.textContent = 'Interviewer speaking';
+            audioStatus.style.display = 'block';
+            
+            const audio = document.getElementById('aiAudio');
+            audio.src = audioUrl.startsWith('/media/') ? audioUrl : `/media/${audioUrl}`;
             audio.play().then(() => {
-                log('Audio playing');
-                if (window.TypewriterSync) {
-                    window.TypewriterSync.start(conversationArea, question, audio, audioDuration);
-                } else {
-                    startFallbackTypewriter(conversationArea, question, audioDuration);
-                }
-            }).catch(error => {
-                log(`Audio play failed: ${error.message}`);
-                startFallbackTypewriter(conversationArea, question);
-                setTimeout(() => enableCandidateResponse(), audioDuration * 1000 || 3000);
+                startFallbackTypewriter(conversationArea, question, audioDuration);
             });
-        };
-        
-        const onAudioEnded = () => {
-            log('Audio playback completed');
-            audio.removeEventListener('ended', onAudioEnded);
-            setTimeout(() => enableCandidateResponse(), 1000);
-        };
-        
-        audio.addEventListener('canplaythrough', onCanPlay);
-        audio.addEventListener('ended', onAudioEnded);
-        
-        // Fallback timeout
-        audioEndedTimeout = setTimeout(() => {
-            if (isInterviewerSpeaking) {
-                log('Audio timeout - enabling microphone');
-                enableCandidateResponse();
-            }
-        }, (audioDuration + 3) * 1000);
-        
-        audio.load();
-        
-    } else {
-        log('No audio, showing text only');
-        audioStatus.style.display = 'none';
-        
-        if (window.TypewriterSync) {
-            window.TypewriterSync.createTextOnly(conversationArea, question, { fast: false }).then(() => {
-                setTimeout(() => enableCandidateResponse(), 1000);
-            });
+            
+            audio.onended = () => setTimeout(() => enableCandidateResponse(), 1000);
         } else {
             startFallbackTypewriter(conversationArea, question);
         }
     }
-}
 
-function startFallbackTypewriter(element, question, audioDuration = null) {
-    log('Using fallback typewriter');
-    let index = 0;
-    const targetDuration = audioDuration ? audioDuration * 1000 : Math.min(question.length * 60, 6000);
-    const charDelay = Math.max(30, Math.min(100, targetDuration / question.length));
-    
-    const typeChar = () => {
-        if (index < question.length) {
-            element.textContent += question.charAt(index);
-            index++;
-            setTimeout(typeChar, charDelay);
-        } else {
-            if (!audioDuration) {
+    function startFallbackTypewriter(element, question, audioDuration = null) {
+        let index = 0;
+        const charDelay = audioDuration ? (audioDuration * 1000) / question.length : 50;
+        
+        const typeChar = () => {
+            if (index < question.length) {
+                element.textContent += question.charAt(index);
+                index++;
+                setTimeout(typeChar, charDelay);
+            } else if (!audioDuration) {
                 setTimeout(() => enableCandidateResponse(), 1000);
             }
-        }
-    };
-    typeChar();
-}
-
-// Enable candidate response - CRITICAL FUNCTION
-function enableCandidateResponse() {
-    log('Enabling candidate response - MICROPHONE NOW ACTIVE');
-    
-    isInterviewerSpeaking = false;
-    isProcessingResponse = false;
-    
-    micBtn.classList.remove('disabled');
-    document.getElementById('aiVideoBox').classList.remove('ai-speaking');
-    
-    audioStatus.className = 'audio-status listening';
-    audioStatus.textContent = '🎤 Your turn - Start speaking';
-    audioStatus.style.display = 'block';
-    
-    setTimeout(() => {
-        audioStatus.style.display = 'none';
-    }, 4000);
-    
-    if (audioEndedTimeout) {
-        clearTimeout(audioEndedTimeout);
-        audioEndedTimeout = null;
-    }
-    
-    // Clear collected text
-    collectedText = '';
-    
-    // Start microphone immediately
-    setTimeout(() => {
-        if (!interviewCompleted && recognition) {
-            startMicrophone();
-            log('✓ Microphone enabled and listening for candidate response');
-        }
-    }, 100); // Reduced from 500ms to 100ms
-}
-
-// Whisper ASR variables
-let mediaRecorder = null;
-let audioChunks = [];
-let isRecording = false;
-
-// Initialize Whisper recording
-function initWhisperRecording() {
-    if (!userStream) {
-        log('No audio stream available for Whisper recording');
-        return false;
-    }
-    
-    try {
-        mediaRecorder = new MediaRecorder(userStream, { mimeType: 'audio/webm' });
-        
-        mediaRecorder.ondataavailable = event => {
-            if (event.data.size > 0) {
-                audioChunks.push(event.data);
-            }
         };
-        
-        mediaRecorder.onstop = async () => {
-            if (audioChunks.length > 0) {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                await sendWhisperAudio(audioBlob);
-            }
-            audioChunks = [];
-        };
-        
-        log('Whisper recording initialized');
-        return true;
-    } catch (error) {
-        log(`Whisper recording init failed: ${error.message}`);
-        return false;
+        typeChar();
     }
-}
 
-// Send audio to Whisper ASR
-async function sendWhisperAudio(audioBlob) {
-    try {
-        log('Sending audio to Whisper ASR...');
+    function enableCandidateResponse() {
+        isInterviewerSpeaking = false;
+        isProcessingResponse = false;
+        document.getElementById('aiVideoBox').classList.remove('speaking');
         
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'response.webm');
-        formData.append('time_remaining', timeLeft);
+        audioStatus.className = 'audio-status listening';
+        audioStatus.textContent = '🎤 Your turn';
+        audioStatus.style.display = 'block';
+        setTimeout(() => audioStatus.style.display = 'none', 3000);
         
-        conversationArea.innerHTML = 
-            `<div style="opacity: 0.7; font-style: italic;">Processing your speech...</div>`;
-        
-        const response = await fetch(window.location.href, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': TEMPLATE_DATA.csrfToken
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            log(`Whisper transcription: ${data.transcribed_text || 'N/A'}`);
-            displayAIResponse(data);
-        } else {
-            log(`Whisper ASR failed: ${data.error}`);
-            conversationArea.innerHTML = 
-                `<div style="color: #f44336; padding: 20px;">Speech recognition failed: ${data.error}</div>`;
-            enableCandidateResponse();
-        }
-        
-    } catch (error) {
-        log(`Whisper upload failed: ${error.message}`);
-        conversationArea.innerHTML = 
-            `<div style="color: #f44336; padding: 20px;">Network error. Please try again.</div>`;
-        enableCandidateResponse();
-    }
-}
-
-// Start Whisper recording
-function startWhisperRecording() {
-    if (!mediaRecorder || isRecording) return;
-    
-    try {
-        audioChunks = [];
-        mediaRecorder.start();
-        isRecording = true;
-        
-        micBtn.classList.add('recording');
-        document.getElementById('candidateVideoBox').classList.add('candidate-speaking');
-        
-        conversationArea.innerHTML = 
-            `<div style="color: #81c784; font-style: italic;">Recording... Click microphone again to stop</div>`;
-        
-        log('Whisper recording started');
-    } catch (error) {
-        log(`Failed to start Whisper recording: ${error.message}`);
-    }
-}
-
-// Stop Whisper recording
-function stopWhisperRecording() {
-    if (!mediaRecorder || !isRecording) return;
-    
-    try {
-        mediaRecorder.stop();
-        isRecording = false;
-        
-        micBtn.classList.remove('recording');
-        document.getElementById('candidateVideoBox').classList.remove('candidate-speaking');
-        
-        log('Whisper recording stopped');
-    } catch (error) {
-        log(`Failed to stop Whisper recording: ${error.message}`);
-    }
-}
-
-// Toggle microphone (updated for Whisper support)
-function toggleMic() {
-    if (interviewCompleted) return;
-    
-    if (isInterviewerSpeaking) {
-        alert('Please wait for the interviewer to finish speaking.');
-        return;
-    }
-    
-    // Use Whisper ASR mode
-    if (window.useWhisperASR) {
-        if (isRecording) {
-            log('Stopping Whisper recording');
-            stopWhisperRecording();
-        } else {
-            log('Starting Whisper recording');
-            startWhisperRecording();
-        }
-        return;
-    }
-    
-    // Use Web Speech API mode (existing code)
-    if (!recognition) return;
-    
-    if (isListening) {
-        log('Manually stopping microphone');
-        stopMicrophone();
-        
-        if (collectedText.trim()) {
-            autoSubmitResponse();
-        }
-    } else {
-        log('Manually starting microphone');
         collectedText = '';
-        startMicrophone();
+        setTimeout(() => !interviewCompleted && startMicrophone(), 100);
     }
-}
 
-// Toggle camera
-{% comment %} function toggleCamera() {
-    if (!userStream) return;
-    
-    const videoTracks = userStream.getVideoTracks();
-    isCameraOn = !isCameraOn;
-    
-    videoTracks.forEach(track => {
-        track.enabled = isCameraOn;
-    });
-    
-    if (isCameraOn) {
-        cameraBtn.classList.remove('off');
-        cameraBtn.title = 'Camera ON - Click to turn off';
-    } else {
-        cameraBtn.classList.add('off');
-        cameraBtn.title = 'Camera OFF - Click to turn on';
-    }
-    
-    log(`Camera ${isCameraOn ? 'enabled' : 'disabled'}`);
-} {% endcomment %}
-
-// Manual face detection start
-function startFaceDetection() {
-    console.log('🔄 Manual face detection start');
-    const video = document.getElementById('userVideo');
-    
-    if (!video) {
-        alert('Video not found');
-        return;
-    }
-    
-    if (video.videoWidth === 0) {
-        alert('Camera not ready yet');
-        return;
-    }
-    
-    // Force create new tracker
-    window.globalFaceTracker = new FaceTracker(video);
-    window.globalFaceTracker.start();
-    
-    console.log('✅ Face tracker manually started');
-}
-
-// End interview
-function endInterview() {
-    if (confirm('Are you sure you want to end the interview?')) {
-        log('Interview ended by candidate');
-        interviewCompleted = true;
+    function toggleMic() {
+        if (interviewCompleted || isInterviewerSpeaking) return;
         
-        stopMicrophone();
-        
-        // Stop camera and microphone
-        if (userStream) {
-            userStream.getTracks().forEach(track => {
-                track.stop();
-                log(`${track.kind} track stopped`);
-            });
-        }
-
-        // Hide all interview elements
-        document.querySelector('.video-grid').style.display = 'none';
-        document.querySelector('.transcript-section').style.display = 'none';
-        document.querySelector('.stats').style.display = 'none';
-        document.getElementById('micBtn').style.display = 'none';
-
-                // Show large full-page completion message
-        document.body.innerHTML = `
-            <div style="
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                background: #202124;
-                color: white;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                text-align: center;
-                padding: 40px;
-            ">
-                <div style="max-width: 800px;">
-                    <h1 style="
-                        font-size: 48px;
-                        margin-bottom: 30px;
-                        color: #4caf50;
-                        font-weight: bold;
-                    ">Interview Ended</h1>
-                    
-                    <p style="
-                        font-size: 28px;
-                        line-height: 1.6;
-                        margin-bottom: 20px;
-                        color: #e0e0e0;
-                    ">Thank you for participating in the AI interview.</p>
-                    
-                    <p style="
-                        font-size: 24px;
-                        color: #b0b0b0;
-                        margin-bottom: 50px;
-                    ">You can close this window now.</p>
-                </div>
-                
-                {% comment %} <button onclick="window.close()" style="
-                    background: #f44336;
-                    color: white;
-                    border: none;
-                    padding: 18px 40px;
-                    border-radius: 50px;
-                    font-size: 20px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    margin-top: 30px;
-                " onmouseover="this.style.transform='scale(1.05)'" 
-                   onmouseout="this.style.transform='scale(1)'">
-                    📞 Close Interview
-                </button> {% endcomment %}
-            </div>
-        `;
-    }
-}
-        
-
-
-// Timer - UPDATED TO SHOW WHEN TIME IS LOW
-function updateTimer() {
-    if (interviewCompleted) return;
-    
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    const timerElement = document.getElementById('timer');
-    timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    
-    // Change color when time is running low
-    if (timeLeft <= 120) {  // Last 2 minutes
-        timerElement.style.color = '#ff9800';
-    }
-    if (timeLeft <= 30) {  // Last 30 seconds
-        timerElement.style.color = '#f44336';
-    }
-    
-    if (timeLeft <= 0) {
-        log('Time expired');
-        interviewCompleted = true;
-        stopMicrophone();
-        
-        // Stop camera and microphone
-        if (userStream) {
-            userStream.getTracks().forEach(track => {
-                track.stop();
-                log(`${track.kind} track stopped`);
-            });
-        }
-
-        // Hide video boxes, transcript, and mic button
-        document.querySelector('.video-grid').style.display = 'none';
-        document.querySelector('.transcript-section').style.display = 'none';
-        document.querySelector('.stats').style.display = 'none';
-        document.getElementById('micBtn').style.display = 'none';
-
-
-        // Show large full-page completion message
-        document.body.innerHTML = `
-            <div style="
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                background: #202124;
-                color: white;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                text-align: center;
-                padding: 40px;
-            ">
-                <div style="max-width: 800px;">
-                    <h1 style="
-                        font-size: 48px;
-                        margin-bottom: 30px;
-                        color: #4caf50;
-                        font-weight: bold;
-                    ">Interview Time Completed</h1>
-                    
-                    <p style="
-                        font-size: 28px;
-                        line-height: 1.6;
-                        margin-bottom: 20px;
-                        color: #e0e0e0;
-                    ">Thank you for participating in the AI interview.</p>
-                    
-                    <p style="
-                        font-size: 24px;
-                        color: #b0b0b0;
-                        margin-bottom: 50px;
-                    ">Your responses have been recorded.</p>
-                </div>
-                
-                {% comment %} <button onclick="window.close()" style="
-                    background: #f44336;
-                    color: white;
-                    border: none;
-                    padding: 18px 40px;
-                    border-radius: 50px;
-                    font-size: 20px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    margin-top: 30px;
-                " onmouseover="this.style.transform='scale(1.05)'" 
-                   onmouseout="this.style.transform='scale(1)'">
-                    📞 Close Interview
-                </button> {% endcomment %}
-            </div>
-        `;
-      
-        
-        return;
-    }
-    
-    timeLeft--;
-}
-
-// Initialize everything
-document.addEventListener('DOMContentLoaded', async function() {
-    log('=== INITIALIZING INTERVIEW SYSTEM ===');
-    
-    // Initialize camera first
-    const cameraSuccess = await initCamera();
-    if (!cameraSuccess) {
-        log('Camera initialization failed - cannot proceed');
-        return;
-    }
-    
-    log('Camera initialization complete');
-    
-    // Initialize speech recognition
-    const speechSuccess = initSpeech();
-    if (!speechSuccess) {
-        log('Speech recognition initialization failed - cannot proceed');
-        return;
-    }
-    
-    // Initialize Whisper recording if needed
-    if (window.useWhisperASR) {
-        const whisperSuccess = initWhisperRecording();
-        if (!whisperSuccess) {
-            log('Whisper recording initialization failed');
+        if (isListening) {
+            stopMicrophone();
+            if (collectedText.trim()) autoSubmitResponse();
         } else {
-            log('Whisper ASR mode enabled');
+            collectedText = '';
+            startMicrophone();
         }
     }
-    
-    log('Speech recognition initialized');
-    
-    // Start timer
-    setInterval(updateTimer, 1000);
-    
-    // Show initial question after delay
-    setTimeout(() => {
-        log('=== SHOWING INITIAL QUESTION ===');
-        const question = TEMPLATE_DATA.initialQuestion || "Welcome to your AI interview! Please tell me about yourself.";
-        const audioUrl = TEMPLATE_DATA.initialAudio || null;
-        const duration = TEMPLATE_DATA.initialDuration || 5;
-        
-        isInitialized = true;
-        showCurrentQuestion(question, audioUrl, duration);
-    }, 2000);
-    
-    log('System initialization complete');
-    
-    // Force face tracking start after camera is ready
-    setTimeout(() => {
-        if (!window.globalFaceTracker) {
-            const video = document.getElementById('userVideo');
-            if (video) {
-                console.log('🎯 Force starting face tracking');
-                window.globalFaceTracker = new FaceTracker(video);
-                window.globalFaceTracker.start();
-            }
-        }
-    }, 5000);
-    
-    // Initialize face tracking directly
-    setTimeout(() => {
+
+    function startFaceDetection() {
         const video = document.getElementById('userVideo');
-        if (video) {
-            console.log('🎯 Starting face tracking on userVideo');
+        if (video && video.videoWidth > 0) {
             window.globalFaceTracker = new FaceTracker(video);
             window.globalFaceTracker.start();
         }
-    }, 2000);
-    
-    // Keep trying to start face tracking
-    const startFaceTracking = () => {
-        if (!window.globalFaceTracker) {
+    }
+
+    function endInterview() {
+        if (confirm('End interview?')) {
+            interviewCompleted = true;
+            stopScreenshotCapture();
+            
+            // Send final screenshots
+            if (screenshots.length > 0) {
+                fetch(window.location.href, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': TEMPLATE_DATA.csrfToken },
+                    body: new FormData().append('final_screenshots', JSON.stringify(screenshots))
+                });
+            }
+            
+            if (userStream) userStream.getTracks().forEach(track => track.stop());
+            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#202124;color:white;font-size:24px;">Interview Ended</div>';
+        }
+    }
+
+    function updateTimer() {
+        if (interviewCompleted) return;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timer').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        if (timeLeft <= 0) endInterview();
+        timeLeft--;
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const cameraSuccess = await initCamera();
+        if (!cameraSuccess) return;
+        
+        initSpeech();
+        setInterval(updateTimer, 1000);
+        
+        setTimeout(() => {
+            const question = TEMPLATE_DATA.initialQuestion || "Welcome to your AI interview!";
+            showCurrentQuestion(question, TEMPLATE_DATA.initialAudio, TEMPLATE_DATA.initialDuration);
+        }, 2000);
+        
+        // Start face tracking
+        setTimeout(() => {
             const video = document.getElementById('userVideo');
-            if (video && video.videoWidth > 0) {
-                console.log('🎯 Face tracking auto-start');
+            if (video) {
                 window.globalFaceTracker = new FaceTracker(video);
                 window.globalFaceTracker.start();
-            } else {
-                setTimeout(startFaceTracking, 1000);
             }
-        }
-    };
-    startFaceTracking();
-});
+        }, 3000);
+    });
     </script>
 </body>
 </html>

@@ -99,7 +99,10 @@
               <li class="has-children">
                 <a href="services.html">Pages</a>
                 <ul class="dropdown">
-                  
+                  <li><a class="dropdown-item" href="{% url 'voice_demo' %}">Voice Agent Demo</a></li>
+                  <li><a class="dropdown-item" href="{% url 'malayalam_voice_main' %}">Malayalam Voice Agent</a></li>
+                  <li><a class="dropdown-item" href="{% url 'tts_test' %}">TTS Testing Lab</a></li>
+                  <li><a class="dropdown-item" href="{% url 'sip_trunk_test' %}">SIP Trunk Test</a></li>
                   
                   {% comment %} <li><a href="{% url 'blog' %}">Blog</a></li>
                   

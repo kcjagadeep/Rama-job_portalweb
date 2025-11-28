@@ -199,6 +199,7 @@ class Interview(models.Model):
     recording_path = models.CharField(max_length=500, blank=True, null=True, help_text="Path to the recorded interview file")
     recording_duration = models.FloatField(blank=True, null=True, help_text="Duration of recording in seconds")
     is_recorded = models.BooleanField(default=False, help_text="Whether this interview was recorded")
+    screenshots_data = models.TextField(blank=True, null=True, help_text="JSON data for interview screenshots")
     
     # Interview Results Fields
     questions_asked = models.TextField(blank=True, null=True, help_text="JSON data of questions asked during interview")
@@ -215,6 +216,7 @@ class Interview(models.Model):
             ('recommended', 'Recommended'),
             ('maybe', 'Maybe'),
             ('not_recommended', 'Not Recommended'),
+            ('never_hire', 'Never Hire'),
         ],
         blank=True,
         null=True,
@@ -304,7 +306,8 @@ class Interview(models.Model):
             'highly_recommended': 'success',
             'recommended': 'info', 
             'maybe': 'warning',
-            'not_recommended': 'danger'
+            'not_recommended': 'danger',
+            'never_hire': 'dark'
         }
         return colors.get(self.recommendation, 'secondary')
     
@@ -366,10 +369,78 @@ class Candidate(models.Model):
         unique_together = ['email', 'added_by']  # Prevent duplicate candidates per recruiter
     
     def __str__(self):
-        return f"{self.name} ({self.email})"        
- 
-        
-    
-    
+        return f"{self.name} ({self.email})"
 
+
+# WebRTC Interview Room Models
+class InterviewRoom(models.Model):
+    """WebRTC-enabled interview room for multiple participants"""
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    interview = models.OneToOneField(Interview, on_delete=models.CASCADE, related_name='webrtc_room')
+    room_id = models.CharField(max_length=20, unique=True, blank=True)
+    passcode = models.CharField(max_length=8, blank=True, help_text="Passcode for additional participants")
     
+    # Room settings
+    max_participants = models.IntegerField(default=5, help_text="Maximum number of participants")
+    enable_recording = models.BooleanField(default=True)
+    enable_screen_share = models.BooleanField(default=True)
+    enable_chat = models.BooleanField(default=True)
+    
+    # Room status
+    is_active = models.BooleanField(default=False)
+    started_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.room_id:
+            self.room_id = self.generate_room_id()
+        if not self.passcode:
+            self.passcode = self.generate_passcode()
+        super().save(*args, **kwargs)
+    
+    def generate_room_id(self):
+        """Generate unique room ID"""
+        import random, string
+        while True:
+            room_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+            if not InterviewRoom.objects.filter(room_id=room_id).exists():
+                return room_id
+    
+    def generate_passcode(self):
+        """Generate 6-digit passcode"""
+        import random
+        return ''.join([str(random.randint(0, 9)) for _ in range(6)])
+    
+    def __str__(self):
+        return f"Room {self.room_id} - {self.interview.job.title}"
+
+class RoomParticipant(models.Model):
+    """Track participants in WebRTC room"""
+    PARTICIPANT_TYPES = [
+        ('candidate', 'Candidate'),
+        ('ai', 'AI Interviewer'),
+        ('recruiter', 'Recruiter'),
+        ('observer', 'Observer'),
+        ('guest', 'Guest'),
+    ]
+    
+    room = models.ForeignKey(InterviewRoom, on_delete=models.CASCADE, related_name='participants')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    participant_type = models.CharField(max_length=20, choices=PARTICIPANT_TYPES)
+    display_name = models.CharField(max_length=100)
+    peer_id = models.CharField(max_length=100, blank=True)
+    
+    # Connection status
+    is_connected = models.BooleanField(default=False)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    left_at = models.DateTimeField(null=True, blank=True)
+    
+    # Media status
+    audio_enabled = models.BooleanField(default=True)
+    video_enabled = models.BooleanField(default=True)
+    screen_sharing = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.display_name} in {self.room.room_id}"

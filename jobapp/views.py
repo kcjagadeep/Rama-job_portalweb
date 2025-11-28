@@ -182,6 +182,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
 from django.middleware.csrf import CsrfViewMiddleware
 import uuid
+from .pdf_generator import generate_interview_pdf
 
 
 
@@ -315,6 +316,9 @@ def post_job(request):
                 if saved_job:
                     logger.info(f"SUCCESS: Job saved successfully with ID {job.id}")
                     messages.success(request, f'Job "{job.title}" posted successfully!')
+                    # Check if request came from dashboard
+                    if request.META.get('HTTP_REFERER') and 'dashboard' in request.META.get('HTTP_REFERER', ''):
+                        return redirect('recruiter_dashboard')
                     return redirect('job_list')
                 else:
                     logger.error("ERROR: Job was not found in database after save attempt")
@@ -1103,6 +1107,16 @@ def start_interview_by_uuid(request, interview_uuid):
                         time_remaining = int(request.POST.get("time_remaining", 900))
                     except (ValueError, TypeError):
                         time_remaining = 900
+                
+                # Handle screenshots if provided
+                screenshots_data = request.POST.get('screenshots')
+                if screenshots_data:
+                    try:
+                        screenshots = json.loads(screenshots_data)
+                        save_interview_screenshots(interview, screenshots)
+                        logger.info(f"Saved {len(screenshots)} screenshots for interview {interview_uuid}")
+                    except Exception as e:
+                        logger.error(f"Failed to save screenshots: {e}")
                         
             except Exception as e:
                 logger.error(f"Error parsing request data: {e}")
@@ -2020,6 +2034,7 @@ def add_candidate_dashboard(request):
                 
                 messages.success(request, f'Candidate {candidate.name} added successfully!')
                 logger.info(f'Candidate {candidate.name} added by user {request.user.username} via dashboard')
+                return redirect('recruiter_dashboard')
                 
             except Exception as e:
                 logger.error(f'Error adding candidate via dashboard: {e}')
@@ -2094,6 +2109,46 @@ def recruiter_dashboard(request):
         logger.warning(f"Completed interview query failed for recruiter {request.user.username}: {e}")
         completed_interviews = []
     
+    # Get recent interviews (last 10) for activity feed
+    try:
+        recent_interviews = Interview.objects.filter(
+            job__posted_by=request.user
+        ).select_related('job', 'candidate').order_by('-created_at')[:10]
+    except Exception as e:
+        logger.warning(f"Recent interviews query failed: {e}")
+        recent_interviews = []
+    
+    # Calculate recommendation statistics
+    try:
+        recommended_count = Interview.objects.filter(
+            job__posted_by=request.user,
+            status='completed',
+            recommendation__in=['highly_recommended', 'recommended']
+        ).count()
+        
+        rejected_count = Interview.objects.filter(
+            job__posted_by=request.user,
+            status='completed',
+            recommendation__in=['not_recommended', 'never_hire']
+        ).count()
+    except Exception as e:
+        logger.warning(f"Recommendation stats query failed: {e}")
+        recommended_count = 0
+        rejected_count = 0
+    
+    # Calculate average interview duration
+    try:
+        from django.db.models import Avg
+        avg_duration = Interview.objects.filter(
+            job__posted_by=request.user,
+            status='completed',
+            interview_duration_minutes__isnull=False
+        ).aggregate(avg_duration=Avg('interview_duration_minutes'))['avg_duration']
+        avg_interview_duration = int(avg_duration) if avg_duration else 15
+    except Exception as e:
+        logger.warning(f"Average duration calculation failed: {e}")
+        avg_interview_duration = 15
+    
     # Get all candidates added by this recruiter
     try:
         all_candidates = Candidate.objects.filter(
@@ -2122,6 +2177,10 @@ def recruiter_dashboard(request):
         'jobs': jobs,
         'user_jobs': user_jobs_list,
         'user': request.user,
+        'recent_interviews': recent_interviews,
+        'recommended_count': recommended_count,
+        'rejected_count': rejected_count,
+        'avg_interview_duration': avg_interview_duration,
         'debug_info': {
             'jobs_count': len(jobs),
             'applications_count': len(applications),
@@ -2288,6 +2347,43 @@ def get_candidate_email(request, candidate_id):
 
 
 
+def save_interview_screenshots(interview, screenshots):
+    """Save interview screenshots to media folder"""
+    try:
+        screenshots_dir = os.path.join(settings.MEDIA_ROOT, 'interview_screenshots', str(interview.uuid))
+        os.makedirs(screenshots_dir, exist_ok=True)
+        
+        saved_screenshots = []
+        for i, screenshot in enumerate(screenshots):
+            if 'image' in screenshot and 'timestamp' in screenshot:
+                # Decode base64 image
+                image_data = screenshot['image'].split(',')[1]
+                image_bytes = base64.b64decode(image_data)
+                
+                # Save image file
+                filename = f"screenshot_{i+1}_{screenshot['timestamp'][:19].replace(':', '-')}.jpg"
+                filepath = os.path.join(screenshots_dir, filename)
+                
+                with open(filepath, 'wb') as f:
+                    f.write(image_bytes)
+                
+                saved_screenshots.append({
+                    'filename': filename,
+                    'timestamp': screenshot['timestamp'],
+                    'path': os.path.join('interview_screenshots', str(interview.uuid), filename)
+                })
+        
+        # Save screenshot info to interview
+        interview.screenshots_data = json.dumps(saved_screenshots)
+        interview.save(update_fields=['screenshots_data'])
+        
+        logger.info(f"Saved {len(saved_screenshots)} screenshots for interview {interview.uuid}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error saving screenshots: {e}")
+        return False
+
 def generate_interview_results(interview, conversation_history):
     """Generate and save interview results from live conversation - FIXED VERSION"""
     try:
@@ -2375,7 +2471,7 @@ def generate_interview_results(interview, conversation_history):
             
             # Create comprehensive analysis prompt
             analysis_prompt = f"""
-Analyze this job interview conversation and provide a detailed professional assessment:
+Analyze this job interview conversation and provide a DECISIVE professional assessment. Be strict and accurate in your evaluation:
 
 CANDIDATE: {interview.candidate_name}
 POSITION: {interview.job.title if interview.job else 'Software Developer'}
@@ -2384,17 +2480,27 @@ COMPANY: {interview.job.company if interview.job else 'Our Company'}
 FULL INTERVIEW CONVERSATION:
 {full_conversation}
 
+EVALUATION CRITERIA:
+- Technical competency and knowledge depth
+- Communication clarity and professionalism
+- Problem-solving approach and logical thinking
+- Relevant experience and skills demonstration
+- Overall interview performance quality
+
 Provide a comprehensive analysis in this exact format:
 
 Overall Assessment:
-[Detailed paragraph analyzing the candidate's technical capabilities, communication skills, professional demeanor, problem-solving approach, and team collaboration potential. Be specific about strengths and concerns based on their actual responses.]
+[Detailed paragraph analyzing the candidate's performance. Be specific about technical gaps, communication issues, or strong points. If responses were vague, incomplete, or showed lack of knowledge, mention this clearly.]
 
-Decision: [Recommended for Hire / Not Recommended for Hire / Requires Further Evaluation]
+Decision: [HIRE / NO HIRE / FURTHER EVALUATION NEEDED]
+
+Recommendation:
+[Choose ONE: "Strong Hire" / "Hire" / "No Hire" / "Never Hire"]
 
 Feedback for the Candidate:
-[Specific advice for improvement, areas to focus on, and strengths to build upon based on the interview performance.]
+[Specific, honest feedback about performance with actionable improvement areas.]
 
-Focus your analysis on: technical competency demonstrated, communication clarity, professional presentation, problem-solving methodology, and cultural fit indicators.
+IMPORTANT: Be decisive and accurate. If the candidate showed poor technical knowledge, gave vague answers, or demonstrated unprofessional behavior, recommend "No Hire" or "Never Hire". Only recommend "Hire" for genuinely qualified candidates.
 """
             
             # Get AI analysis using existing function
@@ -2411,46 +2517,109 @@ Focus your analysis on: technical competency demonstrated, communication clarity
             #Make Hiring Recommendation
             if detailed_analysis and len(detailed_analysis) > 100:
                 ai_feedback = detailed_analysis
-                # Extract recommendation from AI response
-                if 'not recommended' in detailed_analysis.lower():
-                    recommendation = 'not_recommended'
-                elif 'highly recommended' in detailed_analysis.lower():
+                # Extract recommendation from AI response with more decisive mapping
+                analysis_lower = detailed_analysis.lower()
+                if any(phrase in analysis_lower for phrase in ['never hire', 'no hire', 'not recommended', 'reject']):
+                    recommendation = 'never_hire'
+                elif any(phrase in analysis_lower for phrase in ['strong hire', 'highly recommended']):
                     recommendation = 'highly_recommended'
-                elif 'recommended' in detailed_analysis.lower():
+                elif 'hire' in analysis_lower and 'no hire' not in analysis_lower:
                     recommendation = 'recommended'
-                else:
+                elif 'further evaluation' in analysis_lower:
                     recommendation = 'maybe'
+                else:
+                    # Default to stricter evaluation based on performance metrics
+                    if avg_response_length < 30 or total_responses < 3:
+                        recommendation = 'never_hire'
+                    elif avg_response_length < 80 or total_responses < 5:
+                        recommendation = 'not_recommended'
+                    else:
+                        recommendation = 'maybe'
             else:
                 # Fallback to enhanced basic analysis
-                ai_feedback = f"""Overall Assessment:
-The candidate participated in a {total_responses}-question interview with an average response length of {int(avg_response_length)} characters. Based on their engagement level and response quality, they demonstrated {'strong' if avg_response_length > 100 else 'moderate' if avg_response_length > 50 else 'basic'} communication skills. {'The detailed responses suggest good technical understanding and articulation abilities.' if avg_response_length > 100 else 'The responses indicate room for improvement in providing more comprehensive explanations and technical depth.'}
+                # More decisive fallback analysis
+                if avg_response_length < 30 or total_responses < 3:
+                    ai_feedback = f"""Overall Assessment:
+The candidate provided only {total_responses} responses with an average length of {int(avg_response_length)} characters, indicating very limited engagement and insufficient demonstration of qualifications. The brief responses suggest lack of preparation, technical knowledge, or communication skills necessary for this role.
 
-Decision: {'Recommended for Hire' if avg_response_length > 100 else 'Requires Further Evaluation'}
+Decision: NO HIRE
+
+Recommendation: Never Hire
 
 Feedback for the Candidate:
-{'Continue leveraging your strong communication skills and technical knowledge. Focus on maintaining this level of detail in future interviews.' if avg_response_length > 100 else 'To strengthen future opportunities, focus on providing more detailed responses that showcase your technical expertise and problem-solving approach. Practice articulating your experience with specific examples and technical implementations.'}"""
-                recommendation = 'recommended' if avg_response_length > 100 else 'maybe'
+The interview performance was insufficient to evaluate your qualifications. Future interviews require more comprehensive responses demonstrating technical knowledge, relevant experience, and professional communication skills."""
+                    recommendation = 'never_hire'
+                elif avg_response_length < 80 or total_responses < 5:
+                    ai_feedback = f"""Overall Assessment:
+The candidate provided {total_responses} responses averaging {int(avg_response_length)} characters each. The limited depth and engagement suggest inadequate technical knowledge or poor communication skills. The responses lack the detail and expertise expected for this position.
+
+Decision: NO HIRE
+
+Recommendation: No Hire
+
+Feedback for the Candidate:
+Your interview responses were too brief and lacked technical depth. Focus on providing detailed explanations of your experience, specific examples of your work, and comprehensive answers that demonstrate your expertise."""
+                    recommendation = 'not_recommended'
+                else:
+                    ai_feedback = f"""Overall Assessment:
+The candidate provided {total_responses} responses with moderate engagement. While showing some communication ability, the responses require further evaluation to determine technical competency and role suitability.
+
+Decision: FURTHER EVALUATION NEEDED
+
+Recommendation: Further Evaluation Needed
+
+Feedback for the Candidate:
+Your responses showed basic engagement but need more technical depth and specific examples to fully demonstrate your qualifications for this role."""
+                    recommendation = 'maybe'
                 
         except Exception as ai_error:
             logger.error(f"AI analysis failed: {ai_error}")
             # Enhanced fallback analysis
-            ai_feedback = f"""Overall Assessment:
-The candidate completed the interview with {total_responses} responses averaging {int(avg_response_length)} characters each. {'Their detailed responses demonstrate strong communication skills and technical engagement.' if avg_response_length > 100 else 'Their responses show basic engagement but could benefit from more comprehensive technical explanations.'} The interview duration and response quality suggest {'good' if total_responses >= 5 else 'limited'} interaction with the interviewer.
+            # More decisive enhanced fallback analysis
+            if avg_response_length < 30 or total_responses < 3:
+                ai_feedback = f"""Overall Assessment:
+The candidate provided insufficient responses ({total_responses} responses, {int(avg_response_length)} chars average) to properly evaluate their qualifications. This level of engagement is inadequate for a professional interview and suggests lack of preparation or interest.
 
-Decision: {'Recommended for Hire' if avg_response_length > 100 and total_responses >= 5 else 'Requires Further Evaluation'}
+Decision: NO HIRE
+
+Recommendation: Never Hire
 
 Feedback for the Candidate:
-{'Your communication style and technical responses were well-received. Continue to build on these strengths in future opportunities.' if avg_response_length > 100 else 'To improve future interview performance, focus on providing more detailed technical explanations, specific examples from your experience, and comprehensive answers that demonstrate your problem-solving approach.'}"""
-            recommendation = 'recommended' if avg_response_length > 100 and total_responses >= 5 else 'maybe'
+The interview performance was unacceptable. Professional interviews require comprehensive responses demonstrating your expertise and genuine interest in the position."""
+                recommendation = 'never_hire'
+            elif avg_response_length < 80 or total_responses < 5:
+                ai_feedback = f"""Overall Assessment:
+The candidate provided limited responses ({total_responses} responses, {int(avg_response_length)} chars average) that lack the depth and technical detail expected for this role. The brief answers suggest insufficient technical knowledge or poor communication skills.
+
+Decision: NO HIRE
+
+Recommendation: No Hire
+
+Feedback for the Candidate:
+Your responses were too brief and lacked technical substance. Successful candidates provide detailed explanations of their experience and demonstrate deep technical knowledge."""
+                recommendation = 'not_recommended'
+            else:
+                ai_feedback = f"""Overall Assessment:
+The candidate provided {total_responses} responses with moderate detail ({int(avg_response_length)} chars average). While showing some engagement, the responses require additional evaluation to determine if they meet the technical and communication standards for this role.
+
+Decision: FURTHER EVALUATION NEEDED
+
+Recommendation: Further Evaluation Needed
+
+Feedback for the Candidate:
+Your responses showed engagement but need more technical depth and specific examples to fully demonstrate your qualifications."""
+                recommendation = 'maybe'
         else:
             ai_feedback = f"""Overall Assessment:
-The interview was brief with only {total_responses} responses recorded. Limited interaction makes it challenging to provide a comprehensive evaluation of the candidate's technical capabilities and communication skills. More extensive dialogue would be needed to assess their problem-solving approach and cultural fit.
+The interview was extremely brief with only {total_responses} responses recorded. This level of participation is insufficient to evaluate the candidate's qualifications and suggests lack of engagement or preparation for the interview process.
 
-Decision: Requires Further Evaluation
+Decision: NO HIRE
+
+Recommendation: No Hire
 
 Feedback for the Candidate:
-Due to the brief nature of this interview, we recommend scheduling a follow-up session to better showcase your technical expertise and experience. Prepare to discuss specific projects, challenges you've overcome, and your approach to problem-solving in more detail."""
-            recommendation = 'maybe'
+The interview participation was insufficient. Professional interviews require active engagement and comprehensive responses to demonstrate your qualifications for the role."""
+            recommendation = 'not_recommended'
         
         logger.info(f"🎯 Scores calculated - Overall: {overall_score:.1f}, Technical: {technical_score:.1f}, Communication: {communication_score:.1f}")
         logger.info(f"💡 Recommendation: {recommendation}")
@@ -2646,6 +2815,15 @@ def interview_results(request, interview_uuid):
         
         
         
+        # Parse screenshots data
+        screenshots = []
+        if interview.screenshots_data:
+            try:
+                screenshots = json.loads(interview.screenshots_data)
+                logger.info(f"Parsed {len(screenshots)} screenshots for display")
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"Could not parse screenshots_data: {e}")
+        
         # Prepare Data for Template - Packages all data into a dictionary called context
         #-Sends data to HTML template (interview_results.html)
         #-Template uses this data to create the beautiful results page
@@ -2655,6 +2833,7 @@ def interview_results(request, interview_uuid):
             'interview_duration': interview_duration,
             'total_questions': len(questions_asked),
             'total_answers': len(answers_given),
+            'screenshots': screenshots,
         }
         
         logger.info(f"✅ Rendering results page with {len(qa_pairs)} Q&A pairs")
@@ -2746,6 +2925,39 @@ def get_interview_link(request, interview_uuid):
             'success': False,
             'message': f'Failed to get interview link: {str(e)}'
         }, status=500)
+
+@login_required
+@user_passes_test(lambda u: u.is_recruiter)
+def download_interview_pdf(request, interview_uuid):
+    """Download interview results as PDF"""
+    try:
+        interview = get_object_or_404(Interview, uuid=interview_uuid)
+        
+        # Check if recruiter owns this interview
+        if interview.job.posted_by != request.user:
+            messages.error(request, 'You do not have permission to access this interview.')
+            return redirect('recruiter_dashboard')
+        
+        # Check if interview has results
+        if not interview.has_results:
+            messages.error(request, 'This interview does not have results to download.')
+            return redirect('interview_results', interview_uuid=interview_uuid)
+        
+        # Generate PDF
+        pdf_buffer = generate_interview_pdf(interview)
+        
+        # Create response
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        filename = f"Interview_Results_{interview.candidate_name}_{interview.job.title}_{interview.completed_at.strftime('%Y%m%d') if interview.completed_at else 'Unknown'}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        logger.info(f"PDF downloaded for interview {interview_uuid} by {request.user.username}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"PDF download failed for interview {interview_uuid}: {e}")
+        messages.error(request, 'Failed to generate PDF. Please try again.')
+        return redirect('interview_results', interview_uuid=interview_uuid)
 
 
 

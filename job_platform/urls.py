@@ -32,6 +32,9 @@ urlpatterns = [
     path('get-csrf-token/', get_csrf_token, name='get_csrf_token'),
     
     path('generate-audio/', generate_audio, name='generate_audio'),
+    path('voice/', include('jobapp.voice_urls')),
+    path('voice-agent/', include('jobapp.voice_urls')),  # Main voice agent URL
+    path('malayalam-voice/', include('jobapp.malayalam_voice_urls')),  # Malayalam voice agent
     path('favicon.ico', serve, {'document_root': settings.STATIC_ROOT, 'path': 'favicon.ico'}),
     path('ftco-32x32.png', serve, {'document_root': settings.STATIC_ROOT, 'path': 'favicon.ico'}),
 ]

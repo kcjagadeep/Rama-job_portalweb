@@ -1,0 +1,106 @@
+{% load static %}
+<!-- Real-time Voice Agent Widget -->
+<!-- Include this template in any page where you want the voice agent -->
+
+<!-- Voice Agent CSS (inline for easy integration) -->
+<style>
+    .voice-agent-widget {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 9999;
+    }
+    
+    .voice-agent-widget button {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        cursor: pointer;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+    
+    .voice-agent-widget button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    }
+    
+    .voice-agent-widget button.active {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        animation: voice-pulse 2s infinite;
+    }
+    
+    @keyframes voice-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    @media (max-width: 768px) {
+        .voice-agent-widget {
+            bottom: 20px;
+            right: 20px;
+        }
+        
+        .voice-agent-widget button {
+            width: 60px;
+            height: 60px;
+            font-size: 20px;
+        }
+    }
+</style>
+
+<!-- Voice Agent Widget HTML -->
+<div class="voice-agent-widget">
+    <button id="quick-voice-btn" onclick="toggleQuickVoice()" title="Talk to AI Agent">
+        🎤
+    </button>
+</div>
+
+<!-- Voice Agent JavaScript -->
+<script src="{% static 'js/voice-metrics.js' %}"></script>
+<script src="{% static 'js/voice-agent.js' %}"></script>
+<script>
+    let quickVoiceAgent = null;
+    
+    function toggleQuickVoice() {
+        if (!quickVoiceAgent) {
+            // Initialize voice agent on first use
+            quickVoiceAgent = new RealTimeVoiceAgent({
+                autoStart: false,
+                speechTimeout: 2000
+            });
+        }
+        
+        // Toggle the session
+        quickVoiceAgent.toggleSession();
+        
+        // Update button appearance
+        const btn = document.getElementById('quick-voice-btn');
+        if (quickVoiceAgent.isActive) {
+            btn.classList.add('active');
+            btn.innerHTML = '📞';
+            btn.title = 'End conversation';
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = '🎤';
+            btn.title = 'Talk to AI Agent';
+        }
+    }
+    
+    // Ensure CSRF token is available
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!document.querySelector('meta[name="csrf-token"]')) {
+            const meta = document.createElement('meta');
+            meta.name = 'csrf-token';
+            meta.content = '{{ csrf_token }}';
+            document.head.appendChild(meta);
+        }
+    });
+</script>

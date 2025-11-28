@@ -82,13 +82,13 @@ class JobForm(forms.ModelForm):
                 'class': 'form-control',
             }),
             'employment_type': forms.Select(attrs={
-                'class': 'form-control',
+                'class': 'form-select',
             }),
             'experience_level': forms.Select(attrs={
-                'class': 'form-control',
+                'class': 'form-select',
             }),
             'status': forms.Select(attrs={
-                'class': 'form-control',
+                'class': 'form-select',
             }),
             #  'featured_image': forms.FileInput(attrs={
             #     'class': 'form-control',
@@ -210,7 +210,7 @@ class ApplicationForm(forms.ModelForm):
 class ScheduleInterviewForm(forms.ModelForm):
     candidate = forms.ModelChoiceField(
         queryset=None,  # Will be set in __init__
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        widget=forms.Select(attrs={'class': 'form-select'}),
         label='Select Candidate',
         help_text='Choose from candidates you have added',
         empty_label='Select a candidate...'
@@ -221,11 +221,11 @@ class ScheduleInterviewForm(forms.ModelForm):
         fields = ['job', 'scheduled_at', 'interview_duration_minutes']
         widgets = {
             'scheduled_at': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'job': forms.Select(attrs={'class': 'form-control'}),
-            'interview_duration_minutes': forms.Select(attrs={'class': 'form-control'}),
+            'job': forms.Select(attrs={'class': 'form-select'}),
+            'interview_duration_minutes': forms.Select(attrs={'class': 'form-select'}),
         }
         labels = {
-            'job': 'Which job is it?',
+            'job': 'Job Position',
             'scheduled_at': 'Interview Date & Time',
             'interview_duration_minutes': 'Interview Duration',
         }
@@ -291,9 +291,9 @@ class ScheduleInterviewForm(forms.ModelForm):
 class ScheduleInterviewWithCandidateForm(forms.Form):
     job = forms.ModelChoiceField(
         queryset=None,
-        widget=forms.Select(attrs={'class': 'form-control'}),
-        label='Which job is it?',
-        empty_label='Select a job...',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Job Position',
+        empty_label='Select a job position...',
         required=True
     )
     scheduled_at = forms.DateTimeField(
@@ -302,9 +302,9 @@ class ScheduleInterviewWithCandidateForm(forms.Form):
             'class': 'form-control',
             'required': True
         }),
-        label='Interview deadline',
+        label='Interview Date & Time',
         required=True,
-        help_text='Select the date and time for the interview'
+        help_text='Select the date and time when the candidate should complete the interview'
     )
     interview_duration_minutes = forms.ChoiceField(
         choices=[
@@ -314,11 +314,11 @@ class ScheduleInterviewWithCandidateForm(forms.Form):
             (20, '20 minutes'),
             (30, '30 minutes'),
         ],
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        widget=forms.Select(attrs={'class': 'form-select'}),
         label='Interview Duration',
         initial=15,
         required=True,
-        help_text='Select how long this interview should be'
+        help_text='Choose how long the interview should last'
     )
     
     def __init__(self, *args, **kwargs):
@@ -388,7 +388,7 @@ class AddCandidateForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter candidate full name'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'candidate@example.com'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+1234567890'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+1 (555) 123-4567'}),
             'resume': forms.FileInput(attrs={'class': 'form-control', 'accept': '.pdf,.doc,.docx'}),
         }
         labels = {

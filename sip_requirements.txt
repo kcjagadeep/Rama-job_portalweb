@@ -1,0 +1,16 @@
+# SIP Trunk Integration Requirements
+# Note: pjsua requires system-level installation of PJSIP library
+
+# For Ubuntu/Debian:
+# sudo apt-get install libpjproject-dev python3-pjproject
+
+# For macOS:
+# brew install pjproject
+# pip install pjsua2
+
+# For development/testing without actual SIP:
+# You can comment out pjsua and use mock implementation
+
+pjsua2>=2.10
+# Alternative: pjsua (older version)
+# pjsua>=0.3.0

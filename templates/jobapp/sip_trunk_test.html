@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIP Trunk Test - Voice Agent</title>
+    {% load static %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sip-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            color: white;
+        }
+        
+        .dialer-pad {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .number-display {
+            background: rgba(0,0,0,0.3);
+            border: none;
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .dial-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .dial-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+        
+        .call-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            font-size: 24px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .call-btn.call {
+            background: #28a745;
+            color: white;
+        }
+        
+        .call-btn.hangup {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .call-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .status-indicator {
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status-idle {
+            background: rgba(108, 117, 125, 0.3);
+        }
+        
+        .status-calling {
+            background: rgba(255, 193, 7, 0.3);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status-connected {
+            background: rgba(40, 167, 69, 0.3);
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .voice-controls {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .btn-voice {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-voice:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sip-container">
+            <div class="text-center mb-4">
+                <h1><i class="fas fa-phone-alt"></i> SIP Trunk Test</h1>
+                <p class="lead">Voice Agent with SIP Integration</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-server"></i> 
+                    <strong>{{ connection_status }}</strong>
+                    <br><small>Mode: {{ sip_mode }}</small>
+                </div>
+            </div>
+            
+            <!-- Status Display -->
+            <div class="status-indicator status-idle" id="statusDisplay">
+                <i class="fas fa-circle"></i> Ready to dial
+            </div>
+            
+            <!-- Number Display -->
+            <div class="dialer-pad">
+                <input type="text" class="number-display" id="numberDisplay" placeholder="Enter phone number" readonly>
+                
+                <!-- Dialer Buttons -->
+                <div class="text-center">
+                    <div class="row justify-content-center">
+                        <div class="col-auto">
+                            <button class="dial-btn" onclick="addDigit('1')">1</button>
+                            <button class="dial-btn" onclick="addDigit('2')">2</button>
+                            <button class="dial-btn" onclick="addDigit('3')">3</button>
+                        </div>
+                    </div>
+                    <div class="row justify-content-center">
+                        <div class="col-auto">
+                            <button class="dial-btn" onclick="addDigit('4')">4</button>
+                            <button class="dial-btn" onclick="addDigit('5')">5</button>
+                            <button class="dial-btn" onclick="addDigit('6')">6</button>
+                        </div>
+                    </div>
+                    <div class="row justify-content-center">
+                        <div class="col-auto">
+                            <button class="dial-btn" onclick="addDigit('7')">7</button>
+                            <button class="dial-btn" onclick="addDigit('8')">8</button>
+                            <button class="dial-btn" onclick="addDigit('9')">9</button>
+                        </div>
+                    </div>
+                    <div class="row justify-content-center">
+                        <div class="col-auto">
+                            <button class="dial-btn" onclick="addDigit('*')">*</button>
+                            <button class="dial-btn" onclick="addDigit('0')">0</button>
+                            <button class="dial-btn" onclick="addDigit('#')">#</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Call Controls -->
+                <div class="text-center mt-3">
+                    <button class="call-btn call" id="callBtn" onclick="makeCall()">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                    <button class="call-btn hangup" id="hangupBtn" onclick="hangupCall()" style="display: none;">
+                        <i class="fas fa-phone-slash"></i>
+                    </button>
+                    <button class="dial-btn" onclick="clearNumber()" style="background: rgba(220, 53, 69, 0.3);">
+                        <i class="fas fa-backspace"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Voice Agent Controls -->
+            <div class="voice-controls">
+                <h5><i class="fas fa-microphone"></i> Voice Agent Controls</h5>
+                <div class="text-center">
+                    <button class="btn-voice" onclick="startVoiceAgent()">
+                        <i class="fas fa-play"></i> Start Voice Agent
+                    </button>
+                    <button class="btn-voice" onclick="stopVoiceAgent()">
+                        <i class="fas fa-stop"></i> Stop Voice Agent
+                    </button>
+                    <button class="btn-voice" onclick="testAudio()">
+                        <i class="fas fa-volume-up"></i> Test Audio
+                    </button>
+                </div>
+                
+                <!-- Voice Status -->
+                <div class="mt-3">
+                    <div class="alert alert-info" id="voiceStatus">
+                        Voice Agent: Ready
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Dial Presets -->
+            <div class="voice-controls">
+                <h5><i class="fas fa-star"></i> Quick Dial</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <button class="btn-voice w-100" onclick="quickDial('1234567890')">
+                            <i class="fas fa-phone"></i> Test Number 1
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn-voice w-100" onclick="quickDial('0987654321')">
+                            <i class="fas fa-phone"></i> Test Number 2
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentCall = null;
+        let voiceAgentActive = false;
+        
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        const csrftoken = getCookie('csrftoken');
+        
+        // Dialer Functions
+        function addDigit(digit) {
+            const display = document.getElementById('numberDisplay');
+            display.value += digit;
+        }
+        
+        function clearNumber() {
+            const display = document.getElementById('numberDisplay');
+            if (display.value.length > 0) {
+                display.value = display.value.slice(0, -1);
+            }
+        }
+        
+        function quickDial(number) {
+            document.getElementById('numberDisplay').value = number;
+        }
+        
+        // SIP Call Functions
+        async function makeCall() {
+            const number = document.getElementById('numberDisplay').value.trim();
+            
+            if (!number) {
+                alert('Please enter a phone number');
+                return;
+            }
+            
+            try {
+                updateStatus('calling', 'Connecting...');
+                
+                const response = await fetch('/sip/dial/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({ number: number })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentCall = number;
+                    document.getElementById('callBtn').style.display = 'none';
+                    document.getElementById('hangupBtn').style.display = 'inline-block';
+                    updateStatus('connected', `Connected to ${number}`);
+                    
+                    // Auto-start voice agent on successful call
+                    setTimeout(() => {
+                        startVoiceAgent();
+                    }, 2000);
+                } else {
+                    updateStatus('idle', 'Call failed: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Call error:', error);
+                updateStatus('idle', 'Call failed: Network error');
+            }
+        }
+        
+        async function hangupCall() {
+            try {
+                const response = await fetch('/sip/hangup/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    }
+                });
+                
+                const data = await response.json();
+                
+                currentCall = null;
+                document.getElementById('callBtn').style.display = 'inline-block';
+                document.getElementById('hangupBtn').style.display = 'none';
+                updateStatus('idle', 'Call ended');
+                
+                // Stop voice agent
+                stopVoiceAgent();
+                
+            } catch (error) {
+                console.error('Hangup error:', error);
+            }
+        }
+        
+        // Status Management
+        function updateStatus(status, message) {
+            const statusDisplay = document.getElementById('statusDisplay');
+            statusDisplay.className = `status-indicator status-${status}`;
+            
+            let icon = 'fas fa-circle';
+            if (status === 'calling') icon = 'fas fa-phone-alt';
+            else if (status === 'connected') icon = 'fas fa-phone';
+            
+            statusDisplay.innerHTML = `<i class="${icon}"></i> ${message}`;
+        }
+        
+        // Voice Agent Functions
+        async function startVoiceAgent() {
+            try {
+                voiceAgentActive = true;
+                updateVoiceStatus('Voice Agent: Active - Listening...');
+                
+                // Integration with existing voice agent
+                const response = await fetch('/voice/start/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    }
+                });
+                
+                if (response.ok) {
+                    updateVoiceStatus('Voice Agent: Connected and Ready');
+                } else {
+                    updateVoiceStatus('Voice Agent: Connection Failed');
+                }
+            } catch (error) {
+                console.error('Voice agent error:', error);
+                updateVoiceStatus('Voice Agent: Error - ' + error.message);
+            }
+        }
+        
+        async function stopVoiceAgent() {
+            try {
+                voiceAgentActive = false;
+                
+                const response = await fetch('/voice/stop/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    }
+                });
+                
+                updateVoiceStatus('Voice Agent: Stopped');
+            } catch (error) {
+                console.error('Voice agent stop error:', error);
+                updateVoiceStatus('Voice Agent: Stop Error');
+            }
+        }
+        
+        function testAudio() {
+            updateVoiceStatus('Voice Agent: Testing Audio...');
+            
+            // Simple audio test
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+            audio.play().then(() => {
+                updateVoiceStatus('Voice Agent: Audio Test Successful');
+            }).catch(() => {
+                updateVoiceStatus('Voice Agent: Audio Test Failed');
+            });
+        }
+        
+        function updateVoiceStatus(message) {
+            document.getElementById('voiceStatus').textContent = message;
+        }
+        
+        // Status Polling
+        setInterval(async () => {
+            try {
+                const response = await fetch('/sip/status/');
+                const data = await response.json();
+                
+                if (data.success && !data.has_active_call && currentCall) {
+                    // Call ended remotely
+                    currentCall = null;
+                    document.getElementById('callBtn').style.display = 'inline-block';
+                    document.getElementById('hangupBtn').style.display = 'none';
+                    updateStatus('idle', 'Call ended');
+                    stopVoiceAgent();
+                }
+            } catch (error) {
+                console.error('Status check error:', error);
+            }
+        }, 2000);
+        
+        // Keyboard Support
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            if ('0123456789*#'.includes(key)) {
+                addDigit(key);
+            } else if (key === 'Backspace') {
+                clearNumber();
+            } else if (key === 'Enter') {
+                if (currentCall) {
+                    hangupCall();
+                } else {
+                    makeCall();
+                }
+            }
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatus('idle', 'Ready to dial');
+            updateVoiceStatus('Voice Agent: Ready');
+        });
+    </script>
+</body>
+</html>

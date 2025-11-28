@@ -24,7 +24,7 @@
         }
         
         .interview-container {
-            max-width: 600px;
+            max-width: 800px;
             width: 100%;
         }
         
@@ -109,46 +109,25 @@
             background: #e0f2fe;
             border-left: 4px solid #0288d1;
             border-radius: 6px;
-            padding: 0.8rem;
-            margin-bottom: 1.5rem;
+            padding: 0.6rem;
+            margin-bottom: 1rem;
         }
         
         .tips-title {
             color: #0277bd;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
+            font-weight: 500;
+            margin: 0;
             display: flex;
             align-items: center;
-            font-size: 0.85rem;
-            line-height: 1.2;
+            font-size: 0.8rem;
+            line-height: 1.3;
         }
         
         .tips-title i {
             margin-right: 0.4rem;
         }
         
-        .tips-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .tips-list li {
-            padding: 0.2rem 0;
-            color: #555;
-            position: relative;
-            padding-left: 1.2rem;
-            font-size: 0.8rem;
-            line-height: 1.2;
-        }
-        
-        .tips-list li::before {
-            content: '✓';
-            color: #0288d1;
-            font-weight: bold;
-            position: absolute;
-            left: 0;
-        }
+
         
         .action-section {
             text-align: center;
@@ -215,6 +194,59 @@
             line-height: 1.2;
         }
         
+        .agreement-section {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .agreement-title {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .agreement-title i {
+            margin-right: 0.5rem;
+        }
+        
+        .agreement-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        
+        .agreement-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            line-height: 1.3;
+            color: #78350f;
+        }
+        
+        .agreement-item input[type="checkbox"] {
+            margin-top: 0.1rem;
+            cursor: pointer;
+        }
+        
+        .start-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .start-btn:disabled:hover {
+            background: #9ca3af;
+            transform: none;
+        }
+        
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -268,24 +300,46 @@
                     </div>
                 </div>
                 
-                <!-- Quick Tips -->
-                <div class="tips-section">
-                    <div class="tips-title">
-                        <i class="fas fa-lightbulb"></i>
-                        Quick Tips for Success
+
+                
+                <!-- Interview Agreement -->
+                <div class="agreement-section">
+                    <div class="agreement-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Interview Requirements - Please Confirm
                     </div>
-                    <ul class="tips-list">
-                        <li>Find a quiet, well-lit space</li>
-                        <li>Look at the camera when speaking</li>
-                        <li>Speak clearly and take your time</li>
-                        <li>Be yourself and stay confident</li>
-                    </ul>
+                    <div class="agreement-items">
+                        <label class="agreement-item">
+                            <input type="checkbox" id="agree1" onchange="checkAgreements()">
+                            <span>I confirm no one else is near me or will appear in my camera view</span>
+                        </label>
+                        <label class="agreement-item">
+                            <input type="checkbox" id="agree2" onchange="checkAgreements()">
+                            <span>I am in a silent space with no background noise or interruptions</span>
+                        </label>
+                        <label class="agreement-item">
+                            <input type="checkbox" id="agree3" onchange="checkAgreements()">
+                            <span>I understand detecting another person may cause interview failure</span>
+                        </label>
+                        <label class="agreement-item">
+                            <input type="checkbox" id="agree4" onchange="checkAgreements()">
+                            <span>I agree that screenshots and videos will be taken as evidence</span>
+                        </label>
+                        <label class="agreement-item">
+                            <input type="checkbox" id="agree5" onchange="checkAgreements()">
+                            <span>I accept all terms and conditions for this interview</span>
+                        </label>
+                    </div>
                 </div>
                 
                 <!-- Action Buttons -->
                 <div class="action-section">
-                    <a href="{% url 'start_interview' interview.get_uuid %}" class="start-btn">
-                        <i class="fas fa-play"></i> Start Interview
+                    <a href="{% url 'start_interview' interview.get_uuid %}" class="start-btn" id="aiInterviewBtn" onclick="return checkAllAgreed()">
+                        <i class="fas fa-play"></i> Start AI Interview
+                    </a>
+                    
+                    <a href="{% url 'webrtc_interview_room' interview.get_uuid %}" class="start-btn" id="webrtcBtn" style="background: #059669; margin-left: 10px;" onclick="return checkAllAgreed()">
+                        <i class="fas fa-users"></i> Join WebRTC Room
                     </a>
                     
                     <div class="secondary-actions">
@@ -297,8 +351,8 @@
                         </a>
                     </div>
                     
-                    <div class="disclaimer">
-                        This interview will be recorded for evaluation purposes
+                    <div class="disclaimer" style="font-size: 1rem; font-weight: 600; color: #dc2626; text-align: center; margin-top: 1.5rem; padding: 1rem; background: #fef2f2; border: 2px solid #fecaca; border-radius: 8px;">
+                        ⚠️ This interview will be recorded for evaluation purposes
                     </div>
                 </div>
             </div>
@@ -324,6 +378,43 @@
                 alert('❌ Your browser does not support camera access.\n\nPlease use Chrome, Firefox, or Edge.');
             }
         }
+        
+        // Check agreement status
+        function checkAgreements() {
+            const checkboxes = ['agree1', 'agree2', 'agree3', 'agree4', 'agree5'];
+            const allChecked = checkboxes.every(id => document.getElementById(id).checked);
+            
+            const aiBtn = document.getElementById('aiInterviewBtn');
+            const webrtcBtn = document.getElementById('webrtcBtn');
+            
+            if (allChecked) {
+                aiBtn.classList.remove('disabled');
+                webrtcBtn.classList.remove('disabled');
+                aiBtn.style.pointerEvents = 'auto';
+                webrtcBtn.style.pointerEvents = 'auto';
+            } else {
+                aiBtn.classList.add('disabled');
+                webrtcBtn.classList.add('disabled');
+                aiBtn.style.pointerEvents = 'none';
+                webrtcBtn.style.pointerEvents = 'none';
+            }
+        }
+        
+        function checkAllAgreed() {
+            const checkboxes = ['agree1', 'agree2', 'agree3', 'agree4', 'agree5'];
+            const allChecked = checkboxes.every(id => document.getElementById(id).checked);
+            
+            if (!allChecked) {
+                alert('Please check all agreement boxes before starting the interview.');
+                return false;
+            }
+            return true;
+        }
+        
+        // Initialize - disable buttons on load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAgreements();
+        });
     </script>
 </body>
 </html>

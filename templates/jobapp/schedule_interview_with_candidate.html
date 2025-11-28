@@ -6,69 +6,290 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedule Interview - {{ candidate.name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/interview.css' %}">
-</head>
-<body class="bg-light">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success-color: #059669;
+            --info-color: #0891b2;
+            --secondary-color: #64748b;
+            --light-bg: #f8fafc;
+            --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+        }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h2 class="mb-0">📅 Schedule Interview</h2>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 2rem 0;
+        }
+
+        .main-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .schedule-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            border: none;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border: none;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .card-header h1 {
+            color: white;
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .candidate-info {
+            background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+            border: 1px solid #0891b2;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .candidate-info h5 {
+            color: var(--info-color);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .candidate-detail {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem 0;
+        }
+
+        .candidate-detail:last-child {
+            margin-bottom: 0;
+        }
+
+        .candidate-detail i {
+            color: var(--info-color);
+            width: 20px;
+            margin-right: 0.75rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .required-asterisk {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        .info-note {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .info-note i {
+            color: #d97706;
+            margin-right: 0.5rem;
+        }
+
+        .btn-schedule {
+            background: linear-gradient(135deg, var(--success-color), #047857);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+
+        .btn-schedule:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+            background: linear-gradient(135deg, #047857, #065f46);
+        }
+
+        .btn-back {
+            background: var(--secondary-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: #475569;
+            transform: translateY(-1px);
+        }
+
+        .form-text {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .card-header {
+                padding: 1.5rem;
+            }
+            
+            .card-body {
+                padding: 1.5rem;
+            }
+            
+            .candidate-info {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-container">
+            <div class="card schedule-card">
+                <div class="card-header">
+                    <h1><i class="fas fa-calendar-check"></i> Schedule Interview</h1>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <h5>Candidate Details</h5>
-                        <p class="mb-1"><strong>Name:</strong> {{ candidate.name }}</p>
-                        <p class="mb-1"><strong>Email:</strong> {{ candidate.email }}</p>
-                        <p class="mb-0"><strong>Phone:</strong> {{ candidate.phone }}</p>
+                    <div class="candidate-info">
+                        <h5><i class="fas fa-user-circle"></i> Candidate Information</h5>
+                        <div class="candidate-detail">
+                            <i class="fas fa-user"></i>
+                            <strong>{{ candidate.name }}</strong>
+                        </div>
+                        <div class="candidate-detail">
+                            <i class="fas fa-envelope"></i>
+                            {{ candidate.email }}
+                        </div>
+                        <div class="candidate-detail">
+                            <i class="fas fa-phone"></i>
+                            {{ candidate.phone }}
+                        </div>
                     </div>
                     
                     {% if messages %}
                         {% for message in messages %}
                             <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                {{ message }}
+                                <i class="fas fa-info-circle"></i> {{ message }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         {% endfor %}
                     {% endif %}
-                    
-                    <p class="text-muted">Fill out the details below to schedule an interview and send the link to the candidate.</p>
 
                     <form method="post">
                         {% csrf_token %}
                         
-                        <div class="mb-3">
-                            <label for="{{ form.job.id_for_label }}" class="form-label">{{ form.job.label }} <span class="text-danger">*</span></label>
+                        <div class="mb-4">
+                            <label for="{{ form.job.id_for_label }}" class="form-label">
+                                <i class="fas fa-briefcase"></i>
+                                {{ form.job.label }} 
+                                <span class="required-asterisk">*</span>
+                            </label>
                             {{ form.job }}
+                            {% if form.job.errors %}
+                                <div class="text-danger mt-1">
+                                    <small><i class="fas fa-exclamation-triangle"></i> {{ form.job.errors.0 }}</small>
+                                </div>
+                            {% endif %}
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="{{ form.scheduled_at.id_for_label }}" class="form-label">{{ form.scheduled_at.label }} <span class="text-danger">*</span></label>
+                        <div class="mb-4">
+                            <label for="{{ form.scheduled_at.id_for_label }}" class="form-label">
+                                <i class="fas fa-clock"></i>
+                                {{ form.scheduled_at.label }} 
+                                <span class="required-asterisk">*</span>
+                            </label>
                             {{ form.scheduled_at }}
+                            {% if form.scheduled_at.errors %}
+                                <div class="text-danger mt-1">
+                                    <small><i class="fas fa-exclamation-triangle"></i> {{ form.scheduled_at.errors.0 }}</small>
+                                </div>
+                            {% endif %}
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="{{ form.interview_duration_minutes.id_for_label }}" class="form-label">{{ form.interview_duration_minutes.label }} <span class="text-danger">*</span></label>
+                        <div class="mb-4">
+                            <label for="{{ form.interview_duration_minutes.id_for_label }}" class="form-label">
+                                <i class="fas fa-hourglass-half"></i>
+                                {{ form.interview_duration_minutes.label }} 
+                                <span class="required-asterisk">*</span>
+                            </label>
                             {{ form.interview_duration_minutes }}
                             {% if form.interview_duration_minutes.help_text %}
                                 <div class="form-text">{{ form.interview_duration_minutes.help_text }}</div>
                             {% endif %}
+                            {% if form.interview_duration_minutes.errors %}
+                                <div class="text-danger mt-1">
+                                    <small><i class="fas fa-exclamation-triangle"></i> {{ form.interview_duration_minutes.errors.0 }}</small>
+                                </div>
+                            {% endif %}
                         </div>
                         
-                        <div class="alert alert-info">
-                            <small>
-                                <strong>Note:</strong> An email with the interview link will be sent to {{ candidate.email }} automatically.
-                            </small>
+                        <div class="info-note">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Automatic Email Notification:</strong> An interview invitation with the meeting link will be sent to <strong>{{ candidate.email }}</strong> immediately after scheduling.
                         </div>
 
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-calendar-plus"></i> Schedule Interview
+                        <div class="d-grid gap-3">
+                            <button type="submit" class="btn btn-success btn-schedule">
+                                <i class="fas fa-calendar-plus me-2"></i> Schedule Interview
                             </button>
-                            <a href="{% url 'recruiter_dashboard' %}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            <a href="{% url 'recruiter_dashboard' %}" class="btn btn-secondary btn-back">
+                                <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
                             </a>
                         </div>
                     </form>
@@ -76,8 +297,7 @@
             </div>
         </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

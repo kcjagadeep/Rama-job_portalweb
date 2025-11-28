@@ -154,12 +154,17 @@
                     <p class="mb-0 fs-5">{{ interview.candidate_name }} - {{ interview.job.title }}</p>
                 </div>
                 <div class="col-md-4 text-end no-print">
-                    <a href="{% url 'recruiter_dashboard' %}" class="back-btn me-2">
-                        <i class="fas fa-arrow-left"></i> Back to Dashboard
-                    </a>
-                    <button onclick="window.print()" class="print-btn">
-                        <i class="fas fa-print"></i> Print Results
-                    </button>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'recruiter_dashboard' %}" class="back-btn">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                        <a href="{% url 'download_interview_pdf' interview.uuid %}" class="print-btn">
+                            <i class="fas fa-download"></i> Download PDF
+                        </a>
+                        <button onclick="window.print()" class="print-btn">
+                            <i class="fas fa-print"></i> Print Results
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -327,6 +332,30 @@
                 {% endif %}
             </div>
         </div> 
+
+        <!-- Interview Screenshots -->
+        {% if interview.screenshots_data %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="score-card">
+                    <h5><i class="fas fa-camera me-2"></i>Interview Screenshots</h5>
+                    <p class="text-muted mb-3">Visual captures taken during the interview session</p>
+                    <div class="row">
+                        {% for screenshot in screenshots %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card">
+                                <img src="/media/{{ screenshot.path }}" class="card-img-top" alt="Screenshot {{ forloop.counter }}" style="height: 200px; object-fit: cover;">
+                                <div class="card-body p-2">
+                                    <small class="text-muted">{{ screenshot.timestamp|date:"H:i:s" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Full Transcript -->
         {% comment %} {% if interview.transcript %}

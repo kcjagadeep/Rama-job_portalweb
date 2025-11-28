@@ -137,6 +137,11 @@ class FaceTracker {
                 this.updateStatus(`${result.count} faces`, true);
                 this.drawFaces(result.faces || []);
                 
+                // Capture screenshot when second person detected
+                if (result.count > 1 && window.captureScreenshot) {
+                    window.captureScreenshot('second_person_detected');
+                }
+                
                 if (result.alert && !this.alertShown) {
                     console.log('🚨 Multiple people detected!');
                     this.showAlert(`Alert: ${result.count} people detected!`);
